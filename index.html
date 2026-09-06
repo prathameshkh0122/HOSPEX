@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="HOSPEX - Hospitality Resources Exchange"
+    >
+
+    <title>HOSPEX | Hospitality Resources Exchange</title>
+
+    <!-- Google Font -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap"
+        rel="stylesheet"
+    >
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- =========================
+         NAVBAR
+    ========================== -->
+
+    <header class="navbar">
+
+        <div class="logo">
+            <span class="logo-icon">H</span>
+            <span>HOSPEX</span>
+        </div>
+
+        <nav class="nav-links">
+            <a href="#home">Home</a>
+            <a href="#marketplace">Marketplace</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="#impact">Impact</a>
+        </nav>
+
+        <div class="nav-actions">
+            <button
+                class="btn btn-outline"
+                id="loginBtn"
+            >
+                Login
+            </button>
+
+            <button
+                class="btn btn-primary"
+                id="getStartedBtn"
+            >
+                Get Started
+            </button>
+        </div>
+
+    </header>
+
+
+    <!-- =========================
+         HERO SECTION
+    ========================== -->
+
+    <main>
+
+        <section class="hero" id="home">
+
+            <div class="hero-content">
+
+                <div class="hero-badge">
+                    ♻️ Smart Hospitality Resource Exchange
+                </div>
+
+                <h1>
+                    Turn Unused Resources
+                    <span>Into Opportunities.</span>
+                </h1>
+
+                <p>
+                    HOSPEX connects hotels, restaurants, cafés and other
+                    hospitality businesses so they can exchange, donate,
+                    or sell unused resources within their network.
+                </p>
+
+                <div class="hero-buttons">
+
+                    <button
+                        class="btn btn-primary btn-large"
+                        id="heroGetStarted"
+                    >
+                        Start Exchanging →
+                    </button>
+
+                    <button
+                        class="btn btn-secondary btn-large"
+                        id="exploreBtn"
+                    >
+                        Explore Resources
+                    </button>
+
+                </div>
+
+                <div class="hero-stats">
+
+                    <div class="hero-stat">
+                        <strong id="heroResources">127+</strong>
+                        <span>Resources Listed</span>
+                    </div>
+
+                    <div class="hero-stat">
+                        <strong id="heroBusinesses">48+</strong>
+                        <span>Businesses Connected</span>
+                    </div>
+
+                    <div class="hero-stat">
+                        <strong id="heroSaved">₹42K+</strong>
+                        <span>Money Saved</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- HERO VISUAL -->
+
+            <div class="hero-visual">
+
+                <div class="exchange-card">
+
+                    <div class="card-header">
+                        <span>Smart Match</span>
+                        <span class="live-dot">● Live</span>
+                    </div>
+
+
+                    <div class="match-item">
+
+                        <div class="resource-icon furniture">
+                            🪑
+                        </div>
+
+                        <div class="resource-info">
+                            <strong>Banquet Chairs</strong>
+                            <span>50 units • Good condition</span>
+                        </div>
+
+                        <div class="match-score">
+                            <strong>94%</strong>
+                            <span>Match</span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="exchange-arrow">
+                        ↕
+                    </div>
+
+
+                    <div class="match-business">
+
+                        <div class="business-avatar">
+                            HS
+                        </div>
+
+                        <div>
+                            <strong>Hotel Sunshine</strong>
+                            <span>2.1 km away</span>
+                        </div>
+
+                        <span class="verified">
+                            ✓ Verified
+                        </span>
+
+                    </div>
+
+
+                    <button
+                        class="btn btn-primary full-width"
+                        id="heroRequestBtn"
+                    >
+                        Request Resource
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             MARKETPLACE
+        ========================== -->
+
+        <section
+            class="section marketplace-section"
+            id="marketplace"
+        >
+
+            <div class="section-heading">
+
+                <div>
+                    <span class="section-label">
+                        RESOURCE MARKETPLACE
+                    </span>
+
+                    <h2>
+                        Find What You Need.
+                    </h2>
+
+                    <p>
+                        Discover available hospitality resources
+                        from businesses around you.
+                    </p>
+                </div>
+
+                <button
+                    class="btn btn-primary"
+                    id="listResourceBtn"
+                >
+                    + List a Resource
+                </button>
+
+            </div>
+
+
+            <!-- SEARCH & FILTER -->
+
+            <div class="search-container">
+
+                <div class="search-box">
+
+                    <span>🔍</span>
+
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Search resources..."
+                    >
+
+                </div>
+
+
+                <select id="categoryFilter">
+
+                    <option value="all">
+                        All Categories
+                    </option>
+
+                    <option value="food">
+                        🍱 Food
+                    </option>
+
+                    <option value="furniture">
+                        🪑 Furniture
+                    </option>
+
+                    <option value="equipment">
+                        🍳 Kitchen Equipment
+                    </option>
+
+                    <option value="linen">
+                        🛏️ Linen
+                    </option>
+
+                    <option value="supplies">
+                        🧹 Supplies
+                    </option>
+
+                    <option value="packaging">
+                        📦 Packaging
+                    </option>
+
+                </select>
+
+
+                <select id="distanceFilter">
+
+                    <option value="all">
+                        Any Distance
+                    </option>
+
+                    <option value="2">
+                        Within 2 km
+                    </option>
+
+                    <option value="5">
+                        Within 5 km
+                    </option>
+
+                    <option value="10">
+                        Within 10 km
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- RESOURCE GRID -->
+
+            <div
+                class="resource-grid"
+                id="resourceGrid"
+            >
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             HOW IT WORKS
+        ========================== -->
+
+        <section
+            class="section how-section"
+            id="how-it-works"
+        >
+
+            <div class="section-heading centered">
+
+                <span class="section-label">
+                    HOW HOSPEX WORKS
+                </span>
+
+                <h2>
+                    Exchange in 4 Simple Steps.
+                </h2>
+
+                <p>
+                    From surplus resources to successful exchanges,
+                    HOSPEX makes the entire process simple.
+                </p>
+
+            </div>
+
+
+            <div class="steps-grid">
+
+                <div class="step-card">
+
+                    <div class="step-number">
+                        01
+                    </div>
+
+                    <div class="step-icon">
+                        📦
+                    </div>
+
+                    <h3>
+                        List
+                    </h3>
+
+                    <p>
+                        Add your unused or surplus hospitality
+                        resources to the marketplace.
+                    </p>
+
+                </div>
+
+
+                <div class="step-card">
+
+                    <div class="step-number">
+                        02
+                    </div>
+
+                    <div class="step-icon">
+                        🤖
+                    </div>
+
+                    <h3>
+                        Match
+                    </h3>
+
+                    <p>
+                        Our smart matching system finds suitable
+                        businesses nearby.
+                    </p>
+
+                </div>
+
+
+                <div class="step-card">
+
+                    <div class="step-number">
+                        03
+                    </div>
+
+                    <div class="step-icon">
+                        🤝
+                    </div>
+
+                    <h3>
+                        Exchange
+                    </h3>
+
+                    <p>
+                        Request, accept and complete the resource
+                        exchange securely.
+                    </p>
+
+                </div>
+
+
+                <div class="step-card">
+
+                    <div class="step-number">
+                        04
+                    </div>
+
+                    <div class="step-icon">
+                        🌱
+                    </div>
+
+                    <h3>
+                        Impact
+                    </h3>
+
+                    <p>
+                        Track your savings, reused resources and
+                        environmental impact.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             SMART MATCHING
+        ========================== -->
+
+        <section class="section matching-section">
+
+            <div class="matching-content">
+
+                <span class="section-label">
+                    SMART MATCHING
+                </span>
+
+                <h2>
+                    The right resource.
+                    The right business.
+                </h2>
+
+                <p>
+                    HOSPEX analyzes resource type, quantity,
+                    location and availability to calculate the
+                    best possible match.
+                </p>
+
+
+                <div class="matching-points">
+
+                    <div class="matching-point">
+                        <span>✓</span>
+                        <div>
+                            <strong>Location Match</strong>
+                            <p>
+                                Find businesses close to you.
+                            </p>
+                        </div>
+                    </div>
+
+
+                    <div class="matching-point">
+                        <span>✓</span>
+                        <div>
+                            <strong>Quantity Match</strong>
+                            <p>
+                                Match resources based on required quantity.
+                            </p>
+                        </div>
+                    </div>
+
+
+                    <div class="matching-point">
+                        <span>✓</span>
+                        <div>
+                            <strong>Availability Match</strong>
+                            <p>
+                                Prioritize resources available now.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="match-demo">
+
+                <div class="demo-header">
+                    <span>AI MATCHING ENGINE</span>
+                    <span>● Active</span>
+                </div>
+
+
+                <div class="demo-search">
+
+                    <span>🔍</span>
+
+                    <span>
+                        Need 30 banquet chairs
+                        within 5 km
+                    </span>
+
+                </div>
+
+
+                <div class="demo-result">
+
+                    <div class="demo-resource-icon">
+                        🪑
+                    </div>
+
+                    <div class="demo-result-info">
+
+                        <strong>
+                            Hotel Sunshine
+                        </strong>
+
+                        <span>
+                            50 chairs • 2.1 km away
+                        </span>
+
+                    </div>
+
+                    <div class="demo-score">
+                        94%
+                    </div>
+
+                </div>
+
+
+                <div class="score-bar">
+
+                    <div
+                        class="score-fill"
+                        style="width:94%"
+                    ></div>
+
+                </div>
+
+
+                <div class="score-breakdown">
+
+                    <span>
+                        📍 Location <b>40%</b>
+                    </span>
+
+                    <span>
+                        📦 Quantity <b>30%</b>
+                    </span>
+
+                    <span>
+                        ⏱ Availability <b>20%</b>
+                    </span>
+
+                    <span>
+                        ♻️ Type <b>10%</b>
+                    </span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             IMPACT SECTION
+        ========================== -->
+
+        <section
+            class="section impact-section"
+            id="impact"
+        >
+
+            <div class="section-heading centered">
+
+                <span class="section-label">
+                    HOSPEX IMPACT
+                </span>
+
+                <h2>
+                    Every Exchange Creates Impact.
+                </h2>
+
+                <p>
+                    See how resource sharing can reduce waste,
+                    save money and improve sustainability.
+                </p>
+
+            </div>
+
+
+            <div class="impact-grid">
+
+                <div class="impact-card">
+
+                    <div class="impact-icon">
+                        📦
+                    </div>
+
+                    <strong id="impactResources">
+                        386
+                    </strong>
+
+                    <span>
+                        Resources Reused
+                    </span>
+
+                </div>
+
+
+                <div class="impact-card">
+
+                    <div class="impact-icon">
+                        💰
+                    </div>
+
+                    <strong id="impactMoney">
+                        ₹42,500
+                    </strong>
+
+                    <span>
+                        Money Saved
+                    </span>
+
+                </div>
+
+
+                <div class="impact-card">
+
+                    <div class="impact-icon">
+                        🗑️
+                    </div>
+
+                    <strong id="impactWaste">
+                        214 kg
+                    </strong>
+
+                    <span>
+                        Waste Avoided
+                    </span>
+
+                </div>
+
+
+                <div class="impact-card">
+
+                    <div class="impact-icon">
+                        🌍
+                    </div>
+
+                    <strong id="impactCarbon">
+                        178 kg
+                    </strong>
+
+                    <span>
+                        CO₂ Impact
+                    </span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             CTA
+        ========================== -->
+
+        <section class="cta-section">
+
+            <div class="cta-content">
+
+                <span class="section-label">
+                    JOIN HOSPEX
+                </span>
+
+                <h2>
+                    Don't Let Useful Resources
+                    Go to Waste.
+                </h2>
+
+                <p>
+                    Connect with hospitality businesses around you
+                    and start exchanging resources today.
+                </p>
+
+                <button
+                    class="btn btn-primary btn-large"
+                    id="ctaButton"
+                >
+                    Get Started with HOSPEX →
+                </button>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =========================
+         FOOTER
+    ========================== -->
+
+    <footer class="footer">
+
+        <div class="footer-main">
+
+            <div class="footer-brand">
+
+                <div class="logo">
+                    <span class="logo-icon">H</span>
+                    <span>HOSPEX</span>
+                </div>
+
+                <p>
+                    Hospitality Resources Exchange
+                </p>
+
+                <span>
+                    Connecting resources. Reducing waste.
+                </span>
+
+            </div>
+
+
+            <div class="footer-column">
+
+                <h4>
+                    Platform
+                </h4>
+
+                <a href="#marketplace">
+                    Marketplace
+                </a>
+
+                <a href="#how-it-works">
+                    How It Works
+                </a>
+
+                <a href="#impact">
+                    Impact
+                </a>
+
+            </div>
+
+
+            <div class="footer-column">
+
+                <h4>
+                    Resources
+                </h4>
+
+                <a href="#">
+                    Help Center
+                </a>
+
+                <a href="#">
+                    Guidelines
+                </a>
+
+                <a href="#">
+                    Sustainability
+                </a>
+
+            </div>
+
+
+            <div class="footer-column">
+
+                <h4>
+                    Contact
+                </h4>
+
+                <a href="mailto:hello@hospex.com">
+                    hello@hospex.com
+                </a>
+
+                <a href="#">
+                    Partner With Us
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <div class="footer-bottom">
+
+            <span>
+                © 2026 HOSPEX. All rights reserved.
+            </span>
+
+            <span>
+                Built for a smarter hospitality ecosystem.
+            </span>
+
+        </div>
+
+    </footer>
+
+
+    <!-- =========================
+         MODAL — LOGIN
+    ========================== -->
+
+    <div
+        class="modal"
+        id="loginModal"
+    >
+
+        <div class="modal-content">
+
+            <button
+                class="modal-close"
+                data-close="loginModal"
+            >
+                ×
+            </button>
+
+            <div class="modal-icon">
+                🔐
+            </div>
+
+            <h2>
+                Welcome Back
+            </h2>
+
+            <p>
+                Login to your HOSPEX business account.
+            </p>
+
+            <form id="loginForm">
+
+                <label>
+                    Email
+                </label>
+
+                <input
+                    type="email"
+                    id="loginEmail"
+                    placeholder="business@example.com"
+                    required
+                >
+
+                <label>
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="loginPassword"
+                    placeholder="Enter password"
+                    required
+                >
+
+                <button
+                    type="submit"
+                    class="btn btn-primary full-width"
+                >
+                    Login
+                </button>
+
+                <p class="modal-switch">
+                    No account yet?
+                    <a href="#" data-switch-to="registerModal" data-switch-from="loginModal">Register your business</a>
+                </p>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         MODAL — REGISTER
+    ========================== -->
+
+    <div
+        class="modal"
+        id="registerModal"
+    >
+
+        <div class="modal-content">
+
+            <button
+                class="modal-close"
+                data-close="registerModal"
+            >
+                ×
+            </button>
+
+            <div class="modal-icon">
+                🏨
+            </div>
+
+            <h2>
+                Join HOSPEX
+            </h2>
+
+            <p>
+                Register your hospitality business.
+            </p>
+
+            <form id="registerForm">
+
+                <label>
+                    Business Name
+                </label>
+
+                <input
+                    type="text"
+                    id="businessName"
+                    placeholder="Your hotel / restaurant"
+                    required
+                >
+
+                <label>
+                    Business Type
+                </label>
+
+                <select
+                    id="businessType"
+                    required
+                >
+
+                    <option value="">
+                        Select business type
+                    </option>
+
+                    <option value="hotel">
+                        Hotel
+                    </option>
+
+                    <option value="restaurant">
+                        Restaurant
+                    </option>
+
+                    <option value="cafe">
+                        Café
+                    </option>
+
+                    <option value="resort">
+                        Resort
+                    </option>
+
+                    <option value="banquet">
+                        Banquet Hall
+                    </option>
+
+                </select>
+
+
+                <label>
+                    Email
+                </label>
+
+                <input
+                    type="email"
+                    id="registerEmail"
+                    placeholder="business@example.com"
+                    required
+                >
+
+                <label>
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="registerPassword"
+                    placeholder="Create password"
+                    required
+                >
+
+                <button
+                    type="submit"
+                    class="btn btn-primary full-width"
+                >
+                    Create Account
+                </button>
+
+                <p class="modal-switch">
+                    Already registered?
+                    <a href="#" data-switch-to="loginModal" data-switch-from="registerModal">Login instead</a>
+                </p>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         MODAL — LIST RESOURCE
+    ========================== -->
+
+    <div
+        class="modal"
+        id="resourceModal"
+    >
+
+        <div class="modal-content">
+
+            <button
+                class="modal-close"
+                data-close="resourceModal"
+            >
+                ×
+            </button>
+
+            <div class="modal-icon">
+                📦
+            </div>
+
+            <h2>
+                List a Resource
+            </h2>
+
+            <p>
+                Add an unused resource to HOSPEX.
+            </p>
+
+            <form id="resourceForm">
+
+                <label>
+                    Resource Name
+                </label>
+
+                <input
+                    type="text"
+                    id="resourceName"
+                    placeholder="e.g. Banquet Chairs"
+                    required
+                >
+
+
+                <label>
+                    Category
+                </label>
+
+                <select
+                    id="resourceCategory"
+                    required
+                >
+
+                    <option value="">
+                        Select category
+                    </option>
+
+                    <option value="food">
+                        Food
+                    </option>
+
+                    <option value="furniture">
+                        Furniture
+                    </option>
+
+                    <option value="equipment">
+                        Kitchen Equipment
+                    </option>
+
+                    <option value="linen">
+                        Linen
+                    </option>
+
+                    <option value="supplies">
+                        Supplies
+                    </option>
+
+                    <option value="packaging">
+                        Packaging
+                    </option>
+
+                </select>
+
+
+                <label>
+                    Quantity
+                </label>
+
+                <input
+                    type="number"
+                    id="resourceQuantity"
+                    min="1"
+                    placeholder="Enter quantity"
+                    required
+                >
+
+
+                <label>
+                    Condition
+                </label>
+
+                <select
+                    id="resourceCondition"
+                    required
+                >
+
+                    <option value="">
+                        Select condition
+                    </option>
+
+                    <option value="new">
+                        New
+                    </option>
+
+                    <option value="good">
+                        Good
+                    </option>
+
+                    <option value="used">
+                        Used
+                    </option>
+
+                </select>
+
+
+                <label>
+                    Exchange Type
+                </label>
+
+                <select
+                    id="exchangeType"
+                    required
+                >
+
+                    <option value="exchange">
+                        Exchange
+                    </option>
+
+                    <option value="sell">
+                        Sell
+                    </option>
+
+                    <option value="donate">
+                        Donate
+                    </option>
+
+                </select>
+
+
+                <button
+                    type="submit"
+                    class="btn btn-primary full-width"
+                >
+                    List Resource
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         MODAL — REQUEST
+    ========================== -->
+
+    <div
+        class="modal"
+        id="requestModal"
+    >
+
+        <div class="modal-content">
+
+            <button
+                class="modal-close"
+                data-close="requestModal"
+            >
+                ×
+            </button>
+
+            <div class="modal-icon">
+                🤝
+            </div>
+
+            <h2>
+                Request Resource
+            </h2>
+
+            <p id="requestResourceName">
+                Resource
+            </p>
+
+            <form id="requestForm">
+
+                <label>
+                    Quantity Required
+                </label>
+
+                <input
+                    type="number"
+                    id="requestQuantity"
+                    min="1"
+                    placeholder="Enter quantity"
+                    required
+                >
+
+                <label>
+                    Message
+                </label>
+
+                <textarea
+                    id="requestMessage"
+                    rows="4"
+                    placeholder="Write a message to the resource owner..."
+                ></textarea>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary full-width"
+                >
+                    Send Request
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         TOAST
+    ========================== -->
+
+    <div
+        class="toast"
+        id="toast"
+    >
+        <span id="toastIcon">✓</span>
+        <span id="toastMessage">
+            Success
+        </span>
+    </div>
+
+
+    <!-- Main JavaScript -->
+    <script src="script.js"></script>
+
+</body>
+</html>
