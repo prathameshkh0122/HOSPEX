@@ -112,7 +112,18 @@
 
     function updateAuthUI() {
         const button = document.getElementById("loginBtn");
-        if (button) button.textContent = session ? "Logout (" + session.businessName + ")" : "Login";
+        if (button) button.textContent = session ? "Logout" : "Login";
+
+        const welcome = document.getElementById("welcomeUser");
+        if (welcome) {
+            if (session) {
+                welcome.textContent = "Hello, " + session.businessName;
+                welcome.style.display = "inline";
+            } else {
+                welcome.textContent = "";
+                welcome.style.display = "none";
+            }
+        }
     }
 
     function clearSession() {
