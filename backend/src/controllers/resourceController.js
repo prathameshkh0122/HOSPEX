@@ -20,6 +20,7 @@ exports.list = asyncHandler(async (req, res) => {
 exports.create = asyncHandler(async (req, res) => {
   const { name, category, quantity, condition, exchangeType, description = '' } = req.body;
   if (!name || !category || quantity === undefined || !condition || !exchangeType) throw httpError(400, 'Name, category, quantity, condition and exchange type are required.');
+  if (!Number.isSafeInteger(quantity) || quantity < 1) throw httpError(400, 'Quantity must be a positive whole number.');
   const resource = await Resource.create({ name, category, quantity, condition, exchangeType, description,
     owner: req.user._id, ownerName: req.user.businessName, verified: false });
   res.status(201).json({ success: true, message: 'Resource listed successfully.', data: { resource } });

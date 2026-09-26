@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const resourceSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true, maxlength: 120 },
   category: { type: String, required: true, enum: ['food', 'furniture', 'equipment', 'linen', 'supplies', 'packaging'] },
-  quantity: { type: Number, required: true, min: 1, max: 1000000 },
+  quantity: { type: Number, required: true, min: 1, max: 1000000, validate: Number.isInteger },
   condition: { type: String, required: true, enum: ['new', 'good', 'used'] },
   exchangeType: { type: String, required: true, enum: ['exchange', 'sell', 'donate'] },
   description: { type: String, trim: true, maxlength: 1000, default: '' },

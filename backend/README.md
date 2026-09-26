@@ -44,4 +44,5 @@ Protected requests send `Authorization: Bearer <token>`. Register body: `{ "busi
 - Valid categories: `food`, `furniture`, `equipment`, `linen`, `supplies`, `packaging`.
 - JWTs expire after seven days by default. Change `JWT_EXPIRES_IN` to adjust.
 - Sample demo listings have no account owner, so they are browseable and requestable by signed-in businesses.
+- Quantities must be positive whole numbers. Accepting a request atomically reduces the listing quantity; when stock reaches zero, the listing is marked unavailable. Requests can be completed after acceptance.
 - Frontend stores its bearer token in localStorage for this simple static-app setup. For a public production deployment, serve the frontend and API over HTTPS and prefer secure, HttpOnly cookies or another XSS-resistant token strategy.
