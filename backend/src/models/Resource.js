@@ -1,0 +1,20 @@
+const mongoose = require('mongoose');
+
+const resourceSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true, maxlength: 120 },
+  category: { type: String, required: true, enum: ['food', 'furniture', 'equipment', 'linen', 'supplies', 'packaging'] },
+  quantity: { type: Number, required: true, min: 1, max: 1000000 },
+  condition: { type: String, required: true, enum: ['new', 'good', 'used'] },
+  exchangeType: { type: String, required: true, enum: ['exchange', 'sell', 'donate'] },
+  description: { type: String, trim: true, maxlength: 1000, default: '' },
+  // ownerName is a snapshot so listings remain readable if a business is removed.
+  owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  ownerName: { type: String, required: true, trim: true },
+  distance: { type: Number, min: 0, default: null },
+  verified: { type: Boolean, default: false },
+  status: { type: String, enum: ['available', 'reserved', 'completed'], default: 'available' }
+}, { timestamps: true });
+
+resourceSchema.index({ status: 1, category: 1, createdAt: -1 });
+resourceSchema.index({ name: 'text', description: 'text', ownerName: 'text' });
+module.exports = mongoose.model('Resource', resourceSchema);

@@ -1,177 +1,59 @@
-/* =========================================================
-   HOSPEX — MVP frontend logic (no backend)
-   Everything persists in localStorage so the demo survives
-   refreshes but needs no server.
-   ========================================================= */
-
+/* HOSPEX frontend connected to the Express REST API. */
 (function () {
     "use strict";
 
-    /* ---------------------------------------------------
-       STORAGE KEYS
-    --------------------------------------------------- */
-    const KEYS = {
-        RESOURCES: "hospex_resources",
-        USERS: "hospex_users",
-        SESSION: "hospex_session",
-        REQUESTS: "hospex_requests"
-    };
+    const API = "/api/v1";
+    const TOKEN_KEY = "hospex_token";
+    const CATEGORY_ICON = { food: "🍱", furniture: "🪑", equipment: "🍳", linen: "🛏️", supplies: "🧹", packaging: "📦" };
+    const CATEGORY_LABEL = { food: "Food", furniture: "Furniture", equipment: "Equipment", linen: "Linen", supplies: "Supplies", packaging: "Packaging" };
+    const EXCHANGE_LABEL = { exchange: "♻️ Exchange", sell: "💰 Sell", donate: "🎁 Donate" };
+    let token = localStorage.getItem(TOKEN_KEY);
+    let session = null;
+    let resources = [];
+    let toastTimer = null;
+    let searchTimer = null;
 
-    /* ---------------------------------------------------
-       LOOKUPS
-    --------------------------------------------------- */
-    const CATEGORY_ICON = {
-        food: "🍱",
-        furniture: "🪑",
-        equipment: "🍳",
-        linen: "🛏️",
-        supplies: "🧹",
-        packaging: "📦"
-    };
-
-    const CATEGORY_LABEL = {
-        food: "Food",
-        furniture: "Furniture",
-        equipment: "Equipment",
-        linen: "Linen",
-        supplies: "Supplies",
-        packaging: "Packaging"
-    };
-
-    const EXCHANGE_LABEL = {
-        exchange: "♻️ Exchange",
-        sell: "💰 Sell",
-        donate: "🎁 Donate"
-    };
-
-    /* ---------------------------------------------------
-       SEED DATA (first run only)
-    --------------------------------------------------- */
-    const SEED_RESOURCES = [
-        {
-            id: "r1",
-            name: "Banquet Chairs",
-            category: "furniture",
-            quantity: 50,
-            condition: "good",
-            exchangeType: "exchange",
-            description: "50 chairs available in good condition.",
-            ownerName: "Hotel Sunshine",
-            ownerInitials: "HS",
-            distance: 2.1,
-            verified: true
-        },
-        {
-            id: "r2",
-            name: "Commercial Mixer",
-            category: "equipment",
-            quantity: 1,
-            condition: "used",
-            exchangeType: "sell",
-            description: "Heavy-duty kitchen mixer, lightly used.",
-            ownerName: "Grand Café",
-            ownerInitials: "GC",
-            distance: 3.4,
-            verified: true
-        },
-        {
-            id: "r3",
-            name: "Premium Bedsheets",
-            category: "linen",
-            quantity: 100,
-            condition: "new",
-            exchangeType: "donate",
-            description: "Clean, unused hotel bedsheets available.",
-            ownerName: "Royal Palace",
-            ownerInitials: "RP",
-            distance: 1.7,
-            verified: true
-        },
-        {
-            id: "r4",
-            name: "Surplus Meal Packs",
-            category: "food",
-            quantity: 30,
-            condition: "new",
-            exchangeType: "donate",
-            description: "Fresh surplus meals available for donation.",
-            ownerName: "Bistro Terrace",
-            ownerInitials: "BT",
-            distance: 4.2,
-            verified: true
-        }
-    ];
-
-    /* ---------------------------------------------------
-       STORAGE HELPERS
-    --------------------------------------------------- */
-    function load(key, fallback) {
-        try {
-            const raw = localStorage.getItem(key);
-            return raw ? JSON.parse(raw) : fallback;
-        } catch (e) {
-            return fallback;
-        }
-    }
-
-    function save(key, value) {
-        try {
-            localStorage.setItem(key, JSON.stringify(value));
-        } catch (e) {
-            /* storage unavailable — demo still works in-memory for this session */
-        }
-    }
-
-    let resources = load(KEYS.RESOURCES, null);
-    if (!resources) {
-        resources = SEED_RESOURCES;
-        save(KEYS.RESOURCES, resources);
-    }
-
-    let users = load(KEYS.USERS, []);
-    let session = load(KEYS.SESSION, null);
-    let requests = load(KEYS.REQUESTS, []);
-
-    /* ---------------------------------------------------
-       DOM READY
-    --------------------------------------------------- */
     document.addEventListener("DOMContentLoaded", init);
 
-    function init() {
-        renderResources();
-        updateAuthUI();
-        updateStats();
+    async function api(path, options) {
+        const config = options || {};
+        const headers = Object.assign({ "Content-Type": "application/json" }, config.headers || {});
+        if (token) headers.Authorization = "Bearer " + token;
+        let response;
+        try {
+            response = await fetch(API + path, Object.assign({}, config, { headers }));
+        } catch (_error) {
+            throw new Error("Could not reach HOSPEX server. Start the backend and open http://localhost:5000.");
+        }
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            if (response.status === 401 && token) clearSession();
+            throw new Error(result.message || "Request failed. Please try again.");
+        }
+        return result;
+    }
+
+    async function init() {
         wireNav();
         wireModals();
         wireFilters();
         wireForms();
         wireResourceGridClicks();
+        updateAuthUI();
+        await Promise.all([loadResources(), loadStats(), restoreSession()]);
     }
 
-    /* ---------------------------------------------------
-       TOAST
-    --------------------------------------------------- */
-    let toastTimer = null;
     function showToast(message, type) {
         const toast = document.getElementById("toast");
-        const icon = document.getElementById("toastIcon");
-        const msg = document.getElementById("toastMessage");
         if (!toast) return;
-
-        msg.textContent = message;
-        icon.textContent = type === "error" ? "⚠" : "✓";
+        document.getElementById("toastMessage").textContent = message;
+        document.getElementById("toastIcon").textContent = type === "error" ? "⚠" : "✓";
         toast.classList.toggle("error", type === "error");
         toast.classList.add("show");
-
         clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => {
-            toast.classList.remove("show");
-        }, 3200);
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 3200);
     }
 
-    /* ---------------------------------------------------
-       MODALS
-    --------------------------------------------------- */
     function openModal(id) {
         const modal = document.getElementById(id);
         if (modal) modal.classList.add("open");
@@ -183,323 +65,245 @@
     }
 
     function wireModals() {
-        document.querySelectorAll(".modal-close").forEach((btn) => {
-            btn.addEventListener("click", () => closeModal(btn.dataset.close));
+        document.querySelectorAll(".modal-close").forEach((button) => button.addEventListener("click", () => closeModal(button.dataset.close)));
+        document.querySelectorAll(".modal").forEach((modal) => modal.addEventListener("click", (event) => {
+            if (event.target === modal) modal.classList.remove("open");
+        }));
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") document.querySelectorAll(".modal.open").forEach((modal) => modal.classList.remove("open"));
         });
-
-        document.querySelectorAll(".modal").forEach((modal) => {
-            modal.addEventListener("click", (e) => {
-                if (e.target === modal) modal.classList.remove("open");
-            });
-        });
-
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "Escape") {
-                document.querySelectorAll(".modal.open").forEach((m) => m.classList.remove("open"));
-            }
-        });
-
-        document.querySelectorAll("[data-switch-to]").forEach((link) => {
-            link.addEventListener("click", (e) => {
-                e.preventDefault();
-                closeModal(link.dataset.switchFrom);
-                openModal(link.dataset.switchTo);
-            });
-        });
+        document.querySelectorAll("[data-switch-to]").forEach((link) => link.addEventListener("click", (event) => {
+            event.preventDefault();
+            closeModal(link.dataset.switchFrom);
+            openModal(link.dataset.switchTo);
+        }));
     }
 
-    /* ---------------------------------------------------
-       NAV / HERO / CTA WIRING
-    --------------------------------------------------- */
     function wireNav() {
-        document.getElementById("loginBtn").addEventListener("click", () => {
-            if (session) {
-                logout();
-            } else {
-                openModal("loginModal");
-            }
-        });
-
-        document.getElementById("getStartedBtn").addEventListener("click", () => openModal("registerModal"));
-        document.getElementById("heroGetStarted").addEventListener("click", () => openModal("registerModal"));
-        document.getElementById("ctaButton").addEventListener("click", () => openModal("registerModal"));
-
-        document.getElementById("exploreBtn").addEventListener("click", () => {
-            document.getElementById("marketplace").scrollIntoView({ behavior: "smooth" });
-        });
-
+        document.getElementById("loginBtn").addEventListener("click", () => session ? logout() : openModal("loginModal"));
+        ["getStartedBtn", "heroGetStarted", "ctaButton"].forEach((id) => document.getElementById(id).addEventListener("click", () => openModal("registerModal")));
+        document.getElementById("exploreBtn").addEventListener("click", () => document.getElementById("marketplace").scrollIntoView({ behavior: "smooth" }));
         document.getElementById("heroRequestBtn").addEventListener("click", () => {
-            openRequestModal("Banquet Chairs", "r1");
+            const featured = resources.find((resource) => resource.name === "Banquet Chairs");
+            if (featured) openRequestModal(featured);
+            else document.getElementById("marketplace").scrollIntoView({ behavior: "smooth" });
         });
-
         document.getElementById("listResourceBtn").addEventListener("click", () => {
             if (!session) {
                 showToast("Login or register your business first", "error");
-                openModal("registerModal");
+                openModal("loginModal");
                 return;
             }
             openModal("resourceModal");
         });
     }
 
-    /* ---------------------------------------------------
-       AUTH
-    --------------------------------------------------- */
-    function updateAuthUI() {
-        const loginBtn = document.getElementById("loginBtn");
-        if (session) {
-            loginBtn.textContent = "Logout (" + session.businessName + ")";
-        } else {
-            loginBtn.textContent = "Login";
+    async function restoreSession() {
+        if (!token) return;
+        try {
+            const result = await api("/auth/me");
+            session = result.data.user;
+            updateAuthUI();
+        } catch (_error) {
+            clearSession();
+            updateAuthUI();
         }
     }
 
-    function logout() {
+    function updateAuthUI() {
+        const button = document.getElementById("loginBtn");
+        if (button) button.textContent = session ? "Logout (" + session.businessName + ")" : "Login";
+    }
+
+    function clearSession() {
+        token = null;
         session = null;
-        save(KEYS.SESSION, null);
+        localStorage.removeItem(TOKEN_KEY);
+    }
+
+    function logout() {
+        clearSession();
         updateAuthUI();
         showToast("Logged out");
     }
 
     function initials(name) {
-        return name
-            .trim()
-            .split(/\s+/)
-            .slice(0, 2)
-            .map((w) => w[0].toUpperCase())
-            .join("");
+        return String(name || "?").trim().split(/\s+/).slice(0, 2).map((part) => part[0].toUpperCase()).join("");
     }
 
-    /* ---------------------------------------------------
-       FORMS
-    --------------------------------------------------- */
+    function setBusy(form, busy) {
+        const button = form.querySelector('[type="submit"]');
+        if (button) button.disabled = busy;
+    }
+
+    function handleSubmit(form, handler) {
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            setBusy(form, true);
+            try { await handler(event); }
+            catch (error) { showToast(error.message, "error"); }
+            finally { setBusy(form, false); }
+        });
+    }
+
     function wireForms() {
-        document.getElementById("loginForm").addEventListener("submit", (e) => {
-            e.preventDefault();
-            const email = document.getElementById("loginEmail").value.trim().toLowerCase();
-            const password = document.getElementById("loginPassword").value;
-
-            const user = users.find((u) => u.email === email);
-            if (!user) {
-                showToast("No account found for that email — register instead", "error");
-                return;
-            }
-            if (user.password !== password) {
-                showToast("Incorrect password", "error");
-                return;
-            }
-
-            session = { businessName: user.businessName, email: user.email };
-            save(KEYS.SESSION, session);
-            updateAuthUI();
-            e.target.reset();
+        handleSubmit(document.getElementById("loginForm"), async (event) => {
+            const result = await api("/auth/login", { method: "POST", body: JSON.stringify({
+                email: document.getElementById("loginEmail").value.trim(),
+                password: document.getElementById("loginPassword").value
+            }) });
+            saveSession(result.data);
+            event.target.reset();
             closeModal("loginModal");
-            showToast("Welcome back, " + user.businessName);
+            showToast("Welcome back, " + session.businessName);
         });
 
-        document.getElementById("registerForm").addEventListener("submit", (e) => {
-            e.preventDefault();
-            const businessName = document.getElementById("businessName").value.trim();
-            const businessType = document.getElementById("businessType").value;
-            const email = document.getElementById("registerEmail").value.trim().toLowerCase();
-            const password = document.getElementById("registerPassword").value;
-
-            if (users.some((u) => u.email === email)) {
-                showToast("An account with that email already exists — login instead", "error");
-                return;
-            }
-
-            const newUser = { businessName, businessType, email, password };
-            users.push(newUser);
-            save(KEYS.USERS, users);
-
-            session = { businessName, email };
-            save(KEYS.SESSION, session);
-            updateAuthUI();
-
-            e.target.reset();
+        handleSubmit(document.getElementById("registerForm"), async (event) => {
+            const result = await api("/auth/register", { method: "POST", body: JSON.stringify({
+                businessName: document.getElementById("businessName").value.trim(),
+                businessType: document.getElementById("businessType").value,
+                email: document.getElementById("registerEmail").value.trim(),
+                password: document.getElementById("registerPassword").value
+            }) });
+            saveSession(result.data);
+            event.target.reset();
             closeModal("registerModal");
-            showToast("Account created — welcome to HOSPEX, " + businessName);
+            showToast("Account created — welcome to HOSPEX, " + session.businessName);
+            loadStats();
         });
 
-        document.getElementById("resourceForm").addEventListener("submit", (e) => {
-            e.preventDefault();
-            if (!session) {
-                showToast("Please login first", "error");
-                return;
-            }
-
+        handleSubmit(document.getElementById("resourceForm"), async (event) => {
+            if (!session) throw new Error("Please log in first.");
             const name = document.getElementById("resourceName").value.trim();
             const category = document.getElementById("resourceCategory").value;
-            const quantity = parseInt(document.getElementById("resourceQuantity").value, 10) || 1;
+            const quantity = Number(document.getElementById("resourceQuantity").value);
             const condition = document.getElementById("resourceCondition").value;
-            const exchangeType = document.getElementById("exchangeType").value;
-
-            const conditionLabel = { new: "New", good: "good", used: "used" }[condition] || condition;
-
-            const resource = {
-                id: "r" + Date.now(),
-                name,
-                category,
-                quantity,
-                condition,
-                exchangeType,
-                description: quantity + " " + (quantity === 1 ? "unit" : "units") + " available, " + conditionLabel + " condition.",
-                ownerName: session.businessName,
-                ownerInitials: initials(session.businessName),
-                distance: Math.round((0.5 + Math.random() * 9) * 10) / 10,
-                verified: true
-            };
-
-            resources.unshift(resource);
-            save(KEYS.RESOURCES, resources);
-
-            e.target.reset();
+            await api("/resources", { method: "POST", body: JSON.stringify({
+                name, category, quantity, condition,
+                exchangeType: document.getElementById("exchangeType").value,
+                description: quantity + (quantity === 1 ? " unit" : " units") + " available, " + condition + " condition."
+            }) });
+            event.target.reset();
             closeModal("resourceModal");
             showToast(name + " listed on the marketplace");
-            renderResources();
-            updateStats();
+            await Promise.all([loadResources(), loadStats()]);
         });
 
-        document.getElementById("requestForm").addEventListener("submit", (e) => {
-            e.preventDefault();
-            const quantity = document.getElementById("requestQuantity").value;
-            const message = document.getElementById("requestMessage").value.trim();
-            const resourceId = e.target.dataset.resourceId || null;
-            const resourceName = document.getElementById("requestResourceName").textContent;
-
-            requests.push({
-                id: "req" + Date.now(),
+        handleSubmit(document.getElementById("requestForm"), async (event) => {
+            if (!session) throw new Error("Please log in to request a resource.");
+            const resourceId = event.target.dataset.resourceId;
+            const resource = resources.find((item) => item._id === resourceId);
+            const result = await api("/requests", { method: "POST", body: JSON.stringify({
                 resourceId,
-                resourceName,
-                quantity,
-                message,
-                requestedBy: session ? session.businessName : "Guest",
-                createdAt: new Date().toISOString()
-            });
-            save(KEYS.REQUESTS, requests);
-
-            e.target.reset();
+                quantity: Number(document.getElementById("requestQuantity").value),
+                message: document.getElementById("requestMessage").value.trim()
+            }) });
+            event.target.reset();
             closeModal("requestModal");
-            showToast("Request sent for " + resourceName);
+            showToast(result.message || "Request sent" + (resource ? " for " + resource.name : ""));
         });
     }
 
-    /* ---------------------------------------------------
-       REQUEST MODAL
-    --------------------------------------------------- */
-    function openRequestModal(resourceName, resourceId) {
-        document.getElementById("requestResourceName").textContent = resourceName;
-        document.getElementById("requestForm").dataset.resourceId = resourceId || "";
+    function saveSession(data) {
+        token = data.token;
+        session = data.user;
+        localStorage.setItem(TOKEN_KEY, token);
+        updateAuthUI();
+    }
+
+    function openRequestModal(resource) {
+        if (!session) {
+            showToast("Login or register to request a resource", "error");
+            openModal("loginModal");
+            return;
+        }
+        if (resource.owner && resource.owner === session._id) {
+            showToast("You cannot request your own resource", "error");
+            return;
+        }
+        document.getElementById("requestResourceName").textContent = resource.name;
+        const form = document.getElementById("requestForm");
+        form.dataset.resourceId = resource._id;
+        const quantity = document.getElementById("requestQuantity");
+        quantity.max = resource.quantity;
+        quantity.value = Math.min(1, resource.quantity);
         openModal("requestModal");
     }
 
-    /* ---------------------------------------------------
-       RESOURCE GRID
-    --------------------------------------------------- */
-    function resourceCardHTML(r) {
-        const bg = r.category + "-bg";
-        const icon = CATEGORY_ICON[r.category] || "📦";
-        const catLabel = CATEGORY_LABEL[r.category] || r.category;
-        const typeLabel = EXCHANGE_LABEL[r.exchangeType] || r.exchangeType;
-
-        return (
-            '<article class="resource-card" data-category="' + r.category + '" data-distance="' + r.distance + '">' +
-                '<div class="resource-image ' + bg + '">' + icon + "</div>" +
-                '<div class="resource-card-body">' +
-                    '<div class="resource-top">' +
-                        '<span class="category-badge">' + catLabel + "</span>" +
-                        '<span class="distance">📍 ' + r.distance + " km</span>" +
-                    "</div>" +
-                    "<h3>" + escapeHTML(r.name) + "</h3>" +
-                    "<p>" + escapeHTML(r.description) + "</p>" +
-                    '<div class="resource-details">' +
-                        "<span>📦 " + r.quantity + (r.quantity === 1 ? " Unit" : " Units") + "</span>" +
-                        "<span>" + typeLabel + "</span>" +
-                    "</div>" +
-                    '<div class="resource-footer">' +
-                        '<div class="owner">' +
-                            '<div class="owner-avatar">' + escapeHTML(r.ownerInitials) + "</div>" +
-                            "<div><strong>" + escapeHTML(r.ownerName) + "</strong>" +
-                            "<span>" + (r.verified ? "✓ Verified" : "") + "</span></div>" +
-                        "</div>" +
-                        '<button class="small-btn request-btn" data-id="' + r.id + '" data-resource="' + escapeHTML(r.name) + '">Request</button>' +
-                    "</div>" +
-                "</div>" +
-            "</article>"
-        );
-    }
-
-    function escapeHTML(str) {
-        const div = document.createElement("div");
-        div.textContent = String(str == null ? "" : str);
-        return div.innerHTML;
-    }
-
-    function getFilteredResources() {
-        const search = document.getElementById("searchInput").value.trim().toLowerCase();
+    async function loadResources() {
+        const params = new URLSearchParams();
+        const search = document.getElementById("searchInput").value.trim();
         const category = document.getElementById("categoryFilter").value;
         const distance = document.getElementById("distanceFilter").value;
+        if (search) params.set("search", search);
+        if (category !== "all") params.set("category", category);
+        if (distance !== "all") params.set("distance", distance);
+        try {
+            const result = await api("/resources?" + params.toString());
+            resources = result.data.resources;
+            renderResources();
+        } catch (error) {
+            document.getElementById("resourceGrid").innerHTML = '<div class="resource-grid-empty">' + escapeHTML(error.message) + '</div>';
+        }
+    }
 
-        return resources.filter((r) => {
-            const matchesSearch = !search || r.name.toLowerCase().includes(search) || r.ownerName.toLowerCase().includes(search);
-            const matchesCategory = category === "all" || r.category === category;
-            const matchesDistance = distance === "all" || r.distance <= parseFloat(distance);
-            return matchesSearch && matchesCategory && matchesDistance;
-        });
+    function resourceCardHTML(resource) {
+        const category = CATEGORY_LABEL[resource.category] || resource.category;
+        const distance = resource.distance == null ? null : Number(resource.distance);
+        return '<article class="resource-card" data-category="' + escapeHTML(resource.category) + '" data-distance="' + distance + '">' +
+            '<div class="resource-image ' + escapeHTML(resource.category) + '-bg">' + (CATEGORY_ICON[resource.category] || "📦") + '</div>' +
+            '<div class="resource-card-body"><div class="resource-top"><span class="category-badge">' + escapeHTML(category) + '</span><span class="distance">' + (distance == null ? "Distance unavailable" : "📍 " + distance + " km") + '</span></div>' +
+            '<h3>' + escapeHTML(resource.name) + '</h3><p>' + escapeHTML(resource.description || "") + '</p>' +
+            '<div class="resource-details"><span>📦 ' + Number(resource.quantity) + (Number(resource.quantity) === 1 ? " Unit" : " Units") + '</span><span>' + escapeHTML(EXCHANGE_LABEL[resource.exchangeType] || resource.exchangeType) + '</span></div>' +
+            '<div class="resource-footer"><div class="owner"><div class="owner-avatar">' + escapeHTML(initials(resource.ownerName)) + '</div><div><strong>' + escapeHTML(resource.ownerName) + '</strong><span>' + (resource.verified ? "✓ Verified" : "") + '</span></div></div>' +
+            '<button class="small-btn request-btn" data-id="' + escapeHTML(resource._id) + '">Request</button></div></div></article>';
+    }
+
+    function escapeHTML(value) {
+        const div = document.createElement("div");
+        div.textContent = String(value == null ? "" : value);
+        return div.innerHTML;
     }
 
     function renderResources() {
         const grid = document.getElementById("resourceGrid");
-        const list = getFilteredResources();
-
-        if (list.length === 0) {
+        if (!resources.length) {
             grid.innerHTML = '<div class="resource-grid-empty">No resources match your search. Try a different category or distance.</div>';
             return;
         }
-
-        grid.innerHTML = list.map(resourceCardHTML).join("");
+        grid.innerHTML = resources.map(resourceCardHTML).join("");
     }
 
     function wireFilters() {
-        document.getElementById("searchInput").addEventListener("input", renderResources);
-        document.getElementById("categoryFilter").addEventListener("change", renderResources);
-        document.getElementById("distanceFilter").addEventListener("change", renderResources);
+        document.getElementById("searchInput").addEventListener("input", () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(loadResources, 250);
+        });
+        ["categoryFilter", "distanceFilter"].forEach((id) => document.getElementById(id).addEventListener("change", loadResources));
     }
 
     function wireResourceGridClicks() {
-        document.getElementById("resourceGrid").addEventListener("click", (e) => {
-            const btn = e.target.closest(".request-btn");
-            if (!btn) return;
-            openRequestModal(btn.dataset.resource, btn.dataset.id);
+        document.getElementById("resourceGrid").addEventListener("click", (event) => {
+            const button = event.target.closest(".request-btn");
+            if (button) {
+                const resource = resources.find((item) => item._id === button.dataset.id);
+                if (resource) openRequestModal(resource);
+            }
         });
     }
 
-    /* ---------------------------------------------------
-       STATS (hero + impact)
-    --------------------------------------------------- */
-    function updateStats() {
-        const totalResources = resources.length;
-        const businesses = new Set(resources.map((r) => r.ownerName)).size;
-
-        // simple demo assumptions to turn listings into headline numbers
-        const avgValuePerResource = 350; // ₹ per resource, illustrative
-        const moneySaved = totalResources * avgValuePerResource;
-        const wasteAvoidedKg = totalResources * 4.2;
-        const co2Kg = totalResources * 3.5;
-
-        setText("heroResources", (100 + totalResources) + "+");
-        setText("heroBusinesses", (40 + businesses) + "+");
-        setText("heroSaved", "₹" + Math.round((moneySaved + 38000) / 1000) + "K+");
-
-        setText("impactResources", String(totalResources + 350));
-        setText("impactMoney", "₹" + (moneySaved + 38000).toLocaleString("en-IN"));
-        setText("impactWaste", Math.round(wasteAvoidedKg + 195) + " kg");
-        setText("impactCarbon", Math.round(co2Kg + 160) + " kg");
-    }
-
-    function setText(id, value) {
-        const el = document.getElementById(id);
-        if (el) el.textContent = value;
+    async function loadStats() {
+        try {
+            const result = await api("/stats");
+            const stats = result.data;
+            const saved = stats.completedRequests * 350;
+            document.getElementById("heroResources").textContent = stats.resources + "+";
+            document.getElementById("heroBusinesses").textContent = stats.businesses + "+";
+            document.getElementById("heroSaved").textContent = "₹" + Math.round(saved / 1000) + "K+";
+            document.getElementById("impactResources").textContent = String(stats.completedRequests);
+            document.getElementById("impactMoney").textContent = "₹" + saved.toLocaleString("en-IN");
+            document.getElementById("impactWaste").textContent = Math.round(stats.completedRequests * 4.2) + " kg";
+            document.getElementById("impactCarbon").textContent = Math.round(stats.completedRequests * 3.5) + " kg";
+        } catch (_error) { /* Marketplace and auth still work if stats are temporarily unavailable. */ }
     }
 })();
