@@ -23,15 +23,52 @@ exports.weather = asyncHandler(async (req, res) => {
   const name = String(req.query.name || DEFAULT_CITY.name).trim().slice(0, 80);
   const key = `weather:${latitude.toFixed(3)}:${longitude.toFixed(3)}`;
   const data = await cached(key, 8 * 60 * 1000, async () => {
-    const url = new URL('https://api.open-meteo.com/v1/forecast');
-    url.search = new URLSearchParams({ latitude, longitude, current: 'temperature_2m,apparent_temperature,rain,weather_code,wind_speed_10m', hourly: 'temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m', forecast_days: '3', timezone: 'auto' });
-    const response = await fetch(url, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
-    if (!response.ok) throw httpError(502, 'Live weather provider is temporarily unavailable.');
-    const payload = await response.json();
-    return { location: { name, latitude, longitude, timezone: payload.timezone }, current: payload.current, hourly: payload.hourly, fetchedAt: new Date().toISOString(), source: 'Open-Meteo' };
+    try {
+      return await openMeteoForecast(latitude, longitude, name);
+    } catch (_openMeteoError) {
+      return metNorwayForecast(latitude, longitude, name);
+    }
   });
   res.json({ success: true, data });
 });
+
+async function openMeteoForecast(latitude, longitude, name) {
+    const url = new URL('https://api.open-meteo.com/v1/forecast');
+    url.search = new URLSearchParams({ latitude, longitude, current: 'temperature_2m,apparent_temperature,rain,weather_code,wind_speed_10m', hourly: 'temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m', forecast_days: '3', timezone: 'auto' });
+    const response = await fetch(url, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
+    if (!response.ok) throw new Error(`Open-Meteo returned ${response.status}`);
+    const payload = await response.json();
+    return { location: { name, latitude, longitude, timezone: payload.timezone }, current: payload.current, hourly: payload.hourly, fetchedAt: new Date().toISOString(), source: 'Open-Meteo' };
+}
+
+async function metNorwayForecast(latitude, longitude, name) {
+  const url = new URL('https://api.met.no/weatherapi/locationforecast/2.0/compact');
+  url.search = new URLSearchParams({ lat: latitude, lon: longitude });
+  const response = await fetch(url, { headers: { Accept: 'application/json', 'User-Agent': 'HOSPEX-DigitalTwin/1.0 contact@hospex.local' }, signal: AbortSignal.timeout(9000) });
+  if (!response.ok) throw httpError(502, 'Live weather providers are temporarily unavailable. Please retry shortly.');
+  const payload = await response.json();
+  const series = payload.properties?.timeseries || [];
+  if (!series.length) throw httpError(502, 'The weather provider returned no forecast data.');
+  const transform = (entry) => {
+    const details = entry.data.instant?.details || {};
+    const next = entry.data.next_1_hours || entry.data.next_6_hours || {};
+    return {
+      time: entry.time,
+      temperature: details.air_temperature,
+      rain: next.details?.precipitation_amount || 0,
+      wind: details.wind_speed,
+      code: next.summary?.symbol_code || 'cloudy'
+    };
+  };
+  const first = transform(series[0]);
+  const hourly = series.slice(0, 72).map(transform);
+  return {
+    location: { name, latitude, longitude, timezone: 'UTC' },
+    current: { time: first.time, temperature_2m: first.temperature, apparent_temperature: first.temperature, rain: first.rain, weather_code: first.code, wind_speed_10m: first.wind },
+    hourly: { time: hourly.map((item) => item.time), temperature_2m: hourly.map((item) => item.temperature), precipitation_probability: hourly.map(() => 0), precipitation: hourly.map((item) => item.rain), weather_code: hourly.map((item) => item.code), wind_speed_10m: hourly.map((item) => item.wind) },
+    fetchedAt: new Date().toISOString(), source: 'MET Norway Locationforecast (fallback)'
+  };
+}
 
 exports.socialSignals = asyncHandler(async (req, res) => {
   const location = String(req.query.location || DEFAULT_CITY.name).trim().slice(0, 60);
