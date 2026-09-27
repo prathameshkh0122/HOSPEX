@@ -7,5 +7,6 @@ router.get('/', controller.list);
 router.get('/mine', protect, controller.mine);
 router.post('/', protect, resourceImageUpload, controller.create);
 router.get('/:id', controller.getOne);
+router.patch('/:id', protect, resourceImageUpload, controller.update);
 router.delete('/:id', protect, controller.remove);
 module.exports = router;

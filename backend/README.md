@@ -63,10 +63,12 @@ Base path: `/api/v1`. Successful responses use `{ "success": true, "data": ... }
 | GET | `/health` | No | Health check |
 | POST | `/auth/register` | No | Register a user account; returns user and JWT |
 | POST | `/auth/login` | No | Login; returns user and JWT |
+| POST | `/auth/reset-password` | No | Set a new password for the local project account flow |
 | GET | `/auth/me` | Bearer token | Current account |
 | GET | `/resources?search=&category=&distance=&page=&limit=` | No | Browse available resources |
 | GET | `/resources/mine` | Bearer token | Your listings |
 | POST | `/resources` | Bearer token, **verified business** | Create a listing |
+| PATCH | `/resources/:id` | Bearer token, listing owner | Edit price, photo, availability, quantity and transaction options |
 | DELETE | `/resources/:id` | Bearer token | Delete your own listing |
 | GET | `/requests/mine` | Bearer token | Requests you sent |
 | GET | `/requests/received` | Bearer token | Requests for your listings |
@@ -96,7 +98,7 @@ The page uses Leaflet with CARTO basemap tiles to show the weather point and mar
 The model is an explainable, rule-weighted operational predictor: rainfall, duration, flooding and heat influence outdoor availability, indoor demand, covered parking, logistics, cooling/water demand and traveler cancellation probability. It is suitable for decision support and scenario planning, not for emergency dispatch or as a substitute for verified weather/emergency agencies. Public social posts are presented as early-warning context and are not treated as verified reports.
 
 - Register body: `{ "businessName": "...", "businessType": "hotel", "email": "...", "password": "at least 8 characters" }`
-- Resource body: `{ "name": "...", "category": "furniture", "quantity": 10, "pricePerPiece": 45, "availableFrom": "2026-10-01", "availableTo": "2026-10-03", "condition": "good", "exchangeType": "rent", "description": "..." }`
+- Resource body: `{ "name": "...", "category": "furniture", "quantity": 10, "pricePerPiece": 45, "availableFrom": "2026-10-01", "availableTo": "2026-10-03", "condition": "good", "transactionTypes": ["rent", "exchange", "sell"], "description": "..." }`
 - Request body: `{ "resourceId": "...", "quantity": 2, "message": "..." }`
 - Business registration is sent as `multipart/form-data` with fields `businessName, businessType, ownerName, address, cityState, contactNumber, businessEmail, description, licenseNumber, upiId` plus file fields `licenseDocument` and `qrCode`.
 

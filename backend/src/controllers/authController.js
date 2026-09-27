@@ -24,6 +24,21 @@ exports.login = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Logged in successfully.', data: { user, token: createToken(user) } });
 });
 
+// This local-project reset flow intentionally avoids revealing whether an email exists.
+// In a production deployment, replace it with an expiring token delivered to the verified email address.
+exports.resetPassword = asyncHandler(async (req, res) => {
+  const email = String(req.body.email || '').toLowerCase().trim();
+  const newPassword = String(req.body.newPassword || '');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw httpError(400, 'Please enter your registered work email.');
+  if (newPassword.length < 8) throw httpError(400, 'Your new password must be at least 8 characters long.');
+  const user = await User.findOne({ email }).select('+password');
+  if (user) {
+    user.password = newPassword;
+    await user.save();
+  }
+  res.json({ success: true, message: 'If the email is registered, the password has been changed. Please log in with your new password.' });
+});
+
 exports.me = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { user: req.user } });
 });

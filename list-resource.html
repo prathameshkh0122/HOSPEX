@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>List a resource · HOSPEX</title><link rel="stylesheet" href="portal.css">
 <style>
-.form-layout{display:grid;grid-template-columns:190px 1fr;gap:28px;align-items:start}.steps{padding:17px}.step{display:flex;gap:10px;align-items:center;padding:12px 0;color:var(--muted);font-size:13px;font-weight:700}.step.active{color:var(--green)}.dot{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:#f0e2e8;font-size:11px}.active .dot{background:var(--green);color:white}.form{padding:27px}.form h2{font:700 27px 'Playfair Display',Georgia,serif;margin:0 0 7px}.form>p{margin:0 0 22px;color:var(--muted);font-size:14px}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.field-grid .full{grid-column:1/-1}.form label{font-size:12px;font-weight:700;display:block}.form input,.form select,.form textarea{width:100%;margin-top:6px;padding:11px;border:1px solid #e4ccb3;border-radius:8px;background:#fff;font-size:14px}.form textarea{height:94px;resize:vertical}.controls{margin-top:23px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--line);padding-top:18px}.panel{display:none}.panel.show{display:block}.success{text-align:center;padding:45px 15px}.success .check{width:54px;height:54px;border-radius:50%;background:#f3e2e9;color:var(--green);font-size:26px;display:grid;place-items:center;margin:auto}.success h2{font:700 29px 'Playfair Display',Georgia,serif;margin:16px 0 8px}.success p{color:var(--muted);font-size:14px;line-height:1.5}
+.form-layout{display:grid;grid-template-columns:190px 1fr;gap:28px;align-items:start}.steps{padding:17px}.step{display:flex;gap:10px;align-items:center;padding:12px 0;color:var(--muted);font-size:13px;font-weight:700}.step.active{color:var(--green)}.dot{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:#f0e2e8;font-size:11px}.active .dot{background:var(--green);color:white}.form{padding:27px}.form h2{font:700 27px 'Playfair Display',Georgia,serif;margin:0 0 7px}.form>p{margin:0 0 22px;color:var(--muted);font-size:14px}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.field-grid .full{grid-column:1/-1}.form label{font-size:12px;font-weight:700;display:block}.form input,.form select,.form textarea{width:100%;margin-top:6px;padding:11px;border:1px solid #e4ccb3;border-radius:8px;background:#fff;font-size:14px}.form textarea{height:94px;resize:vertical}.option-set{margin-top:6px;display:flex;gap:9px;flex-wrap:wrap}.option-set label{display:flex;align-items:center;gap:6px;padding:9px 11px;border:1px solid #e4ccb3;border-radius:8px;background:#fff;font-size:13px}.option-set input{width:auto;margin:0;accent-color:var(--green)}.controls{margin-top:23px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--line);padding-top:18px}.panel{display:none}.panel.show{display:block}.success{text-align:center;padding:45px 15px}.success .check{width:54px;height:54px;border-radius:50%;background:#f3e2e9;color:var(--green);font-size:26px;display:grid;place-items:center;margin:auto}.success h2{font:700 29px 'Playfair Display',Georgia,serif;margin:16px 0 8px}.success p{color:var(--muted);font-size:14px;line-height:1.5}
 .gate{padding:60px 15px;text-align:center}.gate .icon{width:60px;height:60px;border-radius:50%;background:#fbe9d2;color:#5b1839;font-size:28px;display:grid;place-items:center;margin:0 auto 16px}.gate h2{font:700 27px 'Playfair Display',Georgia,serif;margin:0 0 10px}.gate p{color:var(--muted);font-size:14px;max-width:440px;margin:0 auto 20px;line-height:1.5}.form-error{color:#b3261e;font-size:12px;margin-top:10px;display:none}.form-error.show{display:block}
 @media(max-width:700px){.form-layout{grid-template-columns:1fr}.steps{display:flex;justify-content:space-between}.step{padding:0}.step span{display:none}.field-grid{grid-template-columns:1fr}.form{padding:21px}}
 </style></head>
@@ -54,12 +54,11 @@
             <option value="good">Good</option>
             <option value="used">Used</option>
           </select></label>
-          <label class="full">Exchange type<select id="resourceExchangeType">
-            <option value="exchange">Exchange</option>
-            <option value="rent">Rent</option>
-            <option value="sell">Sell</option>
-            <option value="donate">Donate</option>
-          </select></label>
+          <div class="full"><label>How can others get this resource?</label><div class="option-set">
+            <label><input name="transactionType" type="checkbox" value="rent" checked> Rent</label>
+            <label><input name="transactionType" type="checkbox" value="exchange"> Exchange</label>
+            <label><input name="transactionType" type="checkbox" value="sell"> Sell</label>
+          </div></div>
         </div>
         <div class="controls"><button class="button" onclick="goToStep(1)">← Back</button><button class="button primary" onclick="goToStep(3)">Review listing →</button></div>
       </div>
@@ -109,9 +108,9 @@
     const availableTo = document.getElementById('availableTo').value;
     const category = document.getElementById('resourceCategory').value;
     const condition = document.getElementById('resourceCondition').value;
-    const exchangeType = document.getElementById('resourceExchangeType').value;
-    if(!name || !quantity || quantity < 1 || !priceInput || !Number.isFinite(pricePerPiece) || pricePerPiece < 0 || !availableFrom || !availableTo || availableFrom > availableTo){
-      errorEl.textContent = 'Enter a title, valid quantity, non-negative price per piece, and an availability range.';
+    const transactionTypes = [...document.querySelectorAll('input[name="transactionType"]:checked')].map(input=>input.value);
+    if(!name || !quantity || quantity < 1 || !priceInput || !Number.isFinite(pricePerPiece) || pricePerPiece < 0 || !availableFrom || !availableTo || availableFrom > availableTo || !transactionTypes.length){
+      errorEl.textContent = 'Enter a title, valid quantity, price, availability range, and at least one transaction option.';
       errorEl.classList.add('show');
       goToStep(1);
       return;
@@ -122,7 +121,7 @@
       const image = document.getElementById('resourceImage').files[0];
       const form = new FormData();
       form.append('name', name); form.append('quantity', quantity); form.append('pricePerPiece', pricePerPiece); form.append('availableFrom', availableFrom); form.append('availableTo', availableTo); form.append('description', description); form.append('location', location);
-      form.append('category', category); form.append('condition', condition); form.append('exchangeType', exchangeType);
+      form.append('category', category); form.append('condition', condition); form.append('transactionTypes', transactionTypes.join(','));
       if(image) form.append('image', image);
       const result = await HospexAuth.apiFetch('/resources', { method:'POST', body: form });
       toast('Resource listed successfully.');

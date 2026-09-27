@@ -6,7 +6,7 @@ const requestSchema = new mongoose.Schema({
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   quantity: { type: Number, required: true, min: 1, validate: Number.isInteger },
   message: { type: String, trim: true, maxlength: 1000, default: '' },
-  requestType: { type: String, enum: ['rent', 'exchange'], default: 'rent' },
+  requestType: { type: String, enum: ['rent', 'exchange', 'sell'], default: 'rent' },
   paymentStatus: { type: String, enum: ['not_required', 'awaiting_payment', 'submitted', 'verified', 'rejected'], default: 'awaiting_payment' },
   paymentScreenshot: { type: String, default: '' },
   paymentSubmittedAt: { type: Date, default: null },

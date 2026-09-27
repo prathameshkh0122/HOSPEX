@@ -15,7 +15,9 @@ exports.create = asyncHandler(async (req, res) => {
   if (!resource || resource.status !== 'available') throw httpError(404, 'This resource is no longer available.');
   if (resource.owner && resource.owner.equals(req.user._id)) throw httpError(400, 'You cannot request a resource listed by your own business.');
   if (Number(quantity) > resource.quantity) throw httpError(400, 'Requested quantity exceeds the available amount.');
-  if (!['rent', 'exchange'].includes(requestType)) throw httpError(400, 'Request type must be rent or exchange.');
+  if (!['rent', 'exchange', 'sell'].includes(requestType)) throw httpError(400, 'Request type must be rent, exchange or sell.');
+  const offeredTypes = resource.transactionTypes && resource.transactionTypes.length ? resource.transactionTypes : [resource.exchangeType];
+  if (!offeredTypes.includes(requestType)) throw httpError(400, `This listing is not offered for ${requestType}.`);
   if (requestType === 'exchange') {
     const [requesterBusiness, ownerBusiness] = await Promise.all([
       Business.findOne({ user: req.user._id, verificationStatus: 'verified' }),
@@ -80,18 +82,18 @@ exports.updateStatus = asyncHandler(async (req, res) => {
       if (!chat) {
         chat = await Chat.create({ request: updated._id, resource: updated.resource, participants: [updated.owner, updated.requestedBy], lastMessageAt: new Date() });
         const ownerBusiness = await Business.findOne({ user: updated.owner }).lean();
-        if (ownerBusiness && updated.requestType === 'rent') {
+        if (ownerBusiness && ['rent', 'sell'].includes(updated.requestType)) {
           await ChatMessage.create({
             chat: chat._id,
             sender: updated.owner,
-            text: `Rent request accepted. Please pay to UPI ID: ${ownerBusiness.upiId}. Upload your payment screenshot here after paying.`,
+            text: `${updated.requestType === 'sell' ? 'Purchase' : 'Rent'} request accepted. Please pay to UPI ID: ${ownerBusiness.upiId}. Upload your payment screenshot here after paying.`,
             image: ownerBusiness.qrCode || ''
           });
         }
       }
       await Notification.create({
         user: updated.requestedBy,
-        title: 'Rent request accepted',
+        title: `${updated.requestType === 'sell' ? 'Purchase' : updated.requestType === 'exchange' ? 'Exchange' : 'Rent'} request accepted`,
         message: `Your request for ${resource.name} was accepted. Your chat is ready.`,
         action: { type: '', request: null }
       });
@@ -124,8 +126,8 @@ exports.updateStatus = asyncHandler(async (req, res) => {
 exports.submitPayment = asyncHandler(async (req, res) => {
   if (!req.file) throw httpError(400, 'Please upload a payment screenshot.');
   const request = await ExchangeRequest.findOne({ _id: req.params.id, requestedBy: req.user._id, status: 'accepted' });
-  if (!request) throw httpError(404, 'Accepted rent request not found.');
-  if (request.requestType !== 'rent') throw httpError(400, 'Payment screenshots are only needed for rent requests.');
+  if (!request) throw httpError(404, 'Accepted payment request not found.');
+  if (!['rent', 'sell'].includes(request.requestType)) throw httpError(400, 'Payment screenshots are only needed for rent or purchase requests.');
   request.paymentStatus = 'submitted';
   request.paymentScreenshot = `/uploads/payments/${req.file.filename}`;
   request.paymentSubmittedAt = new Date();

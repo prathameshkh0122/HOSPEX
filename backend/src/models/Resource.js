@@ -5,7 +5,9 @@ const resourceSchema = new mongoose.Schema({
   category: { type: String, required: true, enum: ['food', 'furniture', 'equipment', 'linen', 'supplies', 'packaging'] },
   quantity: { type: Number, required: true, min: 1, max: 1000000, validate: Number.isInteger },
   condition: { type: String, required: true, enum: ['new', 'good', 'used'] },
+  // exchangeType is retained as the primary type for legacy listings and older UI clients.
   exchangeType: { type: String, required: true, enum: ['exchange', 'rent', 'sell', 'donate'] },
+  transactionTypes: [{ type: String, enum: ['rent', 'exchange', 'sell'] }],
   pricePerPiece: { type: Number, min: 0, max: 10000000, default: null },
   availableFrom: { type: Date, default: null },
   availableTo: { type: Date, default: null },

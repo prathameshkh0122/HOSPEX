@@ -27,10 +27,12 @@ exports.create = asyncHandler(async (req, res) => {
   if (!business || business.verificationStatus !== 'verified') {
     throw httpError(403, 'Your business must be verified by admin before listing resources.');
   }
-  const { name, category, condition, exchangeType, description = '', location = '', availableFrom, availableTo } = req.body;
+  const { name, category, condition, description = '', location = '', availableFrom, availableTo } = req.body;
+  const transactionTypes = Array.isArray(req.body.transactionTypes) ? req.body.transactionTypes : String(req.body.transactionTypes || '').split(',').map((type) => type.trim()).filter(Boolean);
   const quantity = Number(req.body.quantity);
   const pricePerPiece = Number(req.body.pricePerPiece);
-  if (!name || !category || quantity === undefined || !condition || !exchangeType) throw httpError(400, 'Name, category, quantity, condition and exchange type are required.');
+  if (!name || !category || quantity === undefined || !condition || !transactionTypes.length) throw httpError(400, 'Name, category, quantity, condition and at least one transaction type are required.');
+  if (transactionTypes.some((type) => !['rent', 'exchange', 'sell'].includes(type))) throw httpError(400, 'Transaction types may only be rent, exchange or sell.');
   if (!Number.isSafeInteger(quantity) || quantity < 1) throw httpError(400, 'Quantity must be a positive whole number.');
   if (req.body.pricePerPiece === undefined || String(req.body.pricePerPiece).trim() === '' || !Number.isFinite(pricePerPiece) || pricePerPiece < 0 || pricePerPiece > 10000000) throw httpError(400, 'Price per piece must be a valid non-negative amount.');
   const from = new Date(availableFrom);
@@ -38,10 +40,30 @@ exports.create = asyncHandler(async (req, res) => {
   if (!availableFrom || !availableTo || Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) {
     throw httpError(400, 'Please provide a valid availability start and end date.');
   }
-  const resource = await Resource.create({ name, category, quantity, condition, exchangeType, pricePerPiece, availableFrom: from, availableTo: to, description, location,
+  const resource = await Resource.create({ name, category, quantity, condition, exchangeType: transactionTypes[0], transactionTypes: [...new Set(transactionTypes)], pricePerPiece, availableFrom: from, availableTo: to, description, location,
     image: req.file ? `/uploads/resources/${req.file.filename}` : '',
     owner: req.user._id, ownerName: req.user.businessName, verified: false });
   res.status(201).json({ success: true, message: 'Resource listed successfully.', data: { resource } });
+});
+
+exports.update = asyncHandler(async (req, res) => {
+  const resource = await Resource.findById(req.params.id);
+  if (!resource) throw httpError(404, 'Resource not found.');
+  if (!resource.owner || !resource.owner.equals(req.user._id)) throw httpError(403, 'You can only edit your own listings.');
+  const { name, category, condition, description = '', location = '', availableFrom, availableTo } = req.body;
+  const quantity = Number(req.body.quantity);
+  const pricePerPiece = Number(req.body.pricePerPiece);
+  const transactionTypes = Array.isArray(req.body.transactionTypes) ? req.body.transactionTypes : String(req.body.transactionTypes || '').split(',').map((type) => type.trim()).filter(Boolean);
+  const from = new Date(availableFrom);
+  const to = new Date(availableTo);
+  if (!name || !category || !condition || !Number.isSafeInteger(quantity) || quantity < 1 || req.body.pricePerPiece === undefined || String(req.body.pricePerPiece).trim() === '' || !Number.isFinite(pricePerPiece) || pricePerPiece < 0 || !transactionTypes.length || transactionTypes.some((type) => !['rent', 'exchange', 'sell'].includes(type)) || !availableFrom || !availableTo || Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) {
+    throw httpError(400, 'Provide valid listing details, price, transaction options and availability dates.');
+  }
+  if (quantity < resource.quantity) throw httpError(400, `Quantity cannot be below the ${resource.quantity} items currently available.`);
+  Object.assign(resource, { name, category, condition, description, location, quantity, pricePerPiece, availableFrom: from, availableTo: to, transactionTypes: [...new Set(transactionTypes)], exchangeType: transactionTypes[0] });
+  if (req.file) resource.image = `/uploads/resources/${req.file.filename}`;
+  await resource.save();
+  res.json({ success: true, message: 'Listing updated successfully.', data: { resource } });
 });
 
 exports.getOne = asyncHandler(async (req, res) => {
