@@ -2,10 +2,17 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  businessName: { type: String, required: true, trim: true, maxlength: 100 },
-  businessType: { type: String, required: true, enum: ['hotel', 'restaurant', 'cafe', 'resort', 'banquet'] },
+  businessName: {
+    type: String, trim: true, maxlength: 100,
+    required: function requiredForUsers() { return this.role !== 'admin'; }
+  },
+  businessType: {
+    type: String, enum: ['hotel', 'restaurant', 'cafe', 'resort', 'banquet'],
+    required: function requiredForUsers() { return this.role !== 'admin'; }
+  },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true, maxlength: 254 },
-  password: { type: String, required: true, minlength: 8, select: false }
+  password: { type: String, required: true, minlength: 8, select: false },
+  role: { type: String, enum: ['user', 'admin'], default: 'user' }
 }, { timestamps: true, toJSON: { transform: (_doc, ret) => { delete ret.password; delete ret.__v; return ret; } } });
 
 userSchema.pre('save', async function hashPassword() {

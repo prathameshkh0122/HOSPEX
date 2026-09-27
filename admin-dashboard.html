@@ -1,0 +1,166 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin dashboard · HOSPEX</title><link rel="stylesheet" href="portal.css">
+<style>
+.dash-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 0 25px}
+.filters{display:flex;gap:8px;margin-bottom:20px}
+.filter-btn{background:#fff;border:1px solid var(--line);border-radius:20px;padding:8px 14px;font-size:12px;font-weight:700;color:var(--muted)}
+.filter-btn.active{background:var(--green);color:#fff;border-color:var(--green)}
+.biz-card{padding:22px;margin-bottom:16px}
+.biz-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.biz-top h3{font:700 20px 'Playfair Display',Georgia,serif;margin:0 0 4px}
+.biz-meta{color:var(--muted);font-size:12px}
+.status-pill{display:inline-block;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:700}
+.status-pill.pending{background:#fbf0d2;color:#8a6d1f}.status-pill.rejected{background:#fbdada;color:#a13030}.status-pill.verified{background:#dff3e6;color:#1f7a45}
+.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 24px;margin-top:16px;font-size:13px}
+.detail-grid .full{grid-column:1/-1}
+.detail-grid strong{display:block;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.doc-links{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.doc-links a{font-size:12px;font-weight:700;color:var(--green);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:#fff}
+.biz-actions{display:flex;gap:10px;margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
+.button.reject{background:#a13030;color:#fff}
+.rejection-note{margin-top:10px;padding:10px 12px;background:#fbdada;border-radius:8px;font-size:12px;color:#7a1f1f}
+.empty-note{color:var(--muted);font-size:13px;padding:40px;text-align:center}
+.gate{padding:80px 15px;text-align:center}.gate h2{font:700 27px 'Playfair Display',Georgia,serif;margin:0 0 10px}.gate p{color:var(--muted);font-size:14px}
+.modal{position:fixed;inset:0;background:rgba(54,20,37,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:20}.modal.show{display:flex}
+.modal-card{width:min(420px,100%);background:#fffaf0;border-radius:16px;padding:26px}
+.modal-card h3{margin:0 0 10px;font:700 20px 'Playfair Display',Georgia,serif}
+.modal-card textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:8px;height:90px;resize:vertical;font-size:13px;margin-top:6px}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+</style></head>
+<body>
+<header class="wrap topbar"><a class="brand" href="index.html"><i class="mark"></i>HOSPEX</a><nav class="nav"><span class="tag">Admin</span></nav><button class="button outline" onclick="adminLogout()">Log out</button></header>
+<main class="wrap">
+  <div id="gateView" class="card gate" style="display:none">
+    <h2>Admin access required</h2>
+    <p id="gateMessage">Please log in with an admin account to view this dashboard.</p>
+  </div>
+
+  <div id="dashView" style="display:none">
+    <div class="dash-head"><div><h1 style="font:700 34px 'Playfair Display',Georgia,serif;margin:0 0 6px">Business verification</h1><p style="color:var(--muted);font-size:14px;margin:0">Review pending business applications and manage verification status.</p></div></div>
+    <div class="filters">
+      <button class="filter-btn active" data-status="pending" onclick="setFilter('pending')">Pending</button>
+      <button class="filter-btn" data-status="verified" onclick="setFilter('verified')">Verified</button>
+      <button class="filter-btn" data-status="rejected" onclick="setFilter('rejected')">Rejected</button>
+      <button class="filter-btn" data-status="" onclick="setFilter('')">All</button>
+    </div>
+    <div id="businessList"></div>
+  </div>
+</main>
+
+<div class="modal" id="rejectModal">
+  <div class="modal-card">
+    <h3>Reject application</h3>
+    <p style="font-size:13px;color:var(--muted);margin:0">Please provide a reason. This will be shown to the business owner.</p>
+    <textarea id="rejectReason" placeholder="e.g. License document is unreadable, please re-upload."></textarea>
+    <div class="modal-actions">
+      <button class="button" onclick="closeRejectModal()">Cancel</button>
+      <button class="button reject" onclick="confirmReject()">Reject application</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+<script src="auth.js"></script>
+<script>
+  function toast(message){ const t=document.getElementById('toast'); t.textContent=message; t.classList.add('show'); clearTimeout(window._toastTimer); window._toastTimer=setTimeout(()=>t.classList.remove('show'),2500) }
+
+  let currentFilter = 'pending';
+  let pendingRejectId = null;
+
+  function adminLogout(){ HospexAuth.clearSession(); window.location.href = 'index.html' }
+
+  function setFilter(status){
+    currentFilter = status;
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.status === status));
+    loadBusinesses();
+  }
+
+  function openRejectModal(id){ pendingRejectId = id; document.getElementById('rejectReason').value=''; document.getElementById('rejectModal').classList.add('show') }
+  function closeRejectModal(){ document.getElementById('rejectModal').classList.remove('show'); pendingRejectId = null }
+
+  async function confirmReject(){
+    const reason = document.getElementById('rejectReason').value.trim();
+    if(!reason){ toast('A rejection reason is required.'); return }
+    try{
+      await HospexAuth.apiFetch('/admin/businesses/' + pendingRejectId + '/reject', { method:'POST', body:{ reason } });
+      toast('Application rejected.');
+      closeRejectModal();
+      loadBusinesses();
+    }catch(error){ toast(error.message) }
+  }
+
+  async function verifyBusiness(id){
+    try{
+      await HospexAuth.apiFetch('/admin/businesses/' + id + '/verify', { method:'POST' });
+      toast('Business verified.');
+      loadBusinesses();
+    }catch(error){ toast(error.message) }
+  }
+
+  function escapeHtml(str){
+    return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function renderBusiness(biz){
+    const status = biz.verificationStatus;
+    const submitted = biz.submittedAt ? new Date(biz.submittedAt).toLocaleString() : '—';
+    const ownerEmail = biz.user && biz.user.email ? biz.user.email : '—';
+    const actions = status === 'pending'
+      ? `<div class="biz-actions"><button class="button primary" onclick="verifyBusiness('${biz._id}')">Verify</button><button class="button reject" onclick="openRejectModal('${biz._id}')">Reject</button></div>`
+      : '';
+    const rejectionNote = status === 'rejected' && biz.rejectionReason
+      ? `<div class="rejection-note"><strong>Rejection reason:</strong> ${escapeHtml(biz.rejectionReason)}</div>`
+      : '';
+    return `<div class="card biz-card">
+      <div class="biz-top">
+        <div><h3>${escapeHtml(biz.businessName)}</h3><div class="biz-meta">${escapeHtml(biz.businessType)} · Submitted ${submitted}</div></div>
+        <span class="status-pill ${status}">${status}</span>
+      </div>
+      <div class="detail-grid">
+        <div><strong>Owner</strong>${escapeHtml(biz.ownerName)}</div>
+        <div><strong>Account email</strong>${escapeHtml(ownerEmail)}</div>
+        <div><strong>Business email</strong>${escapeHtml(biz.businessEmail)}</div>
+        <div><strong>Contact number</strong>${escapeHtml(biz.contactNumber)}</div>
+        <div><strong>Address</strong>${escapeHtml(biz.address)}</div>
+        <div><strong>City / State</strong>${escapeHtml(biz.cityState)}</div>
+        <div><strong>License number</strong>${escapeHtml(biz.licenseNumber)}</div>
+        <div><strong>UPI ID</strong>${escapeHtml(biz.upiId)}</div>
+        <div class="full"><strong>Description</strong>${escapeHtml(biz.description) || '—'}</div>
+      </div>
+      <div class="doc-links">
+        <a href="${biz.licenseDocument}" target="_blank" rel="noopener">📄 View license document</a>
+        <a href="${biz.qrCode}" target="_blank" rel="noopener">🔳 View QR code</a>
+      </div>
+      ${rejectionNote}
+      ${actions}
+    </div>`;
+  }
+
+  async function loadBusinesses(){
+    const list = document.getElementById('businessList');
+    list.innerHTML = '<div class="empty-note">Loading…</div>';
+    try{
+      const query = currentFilter ? ('?status=' + currentFilter) : '';
+      const result = await HospexAuth.apiFetch('/admin/businesses' + query);
+      const businesses = result.data.businesses || [];
+      list.innerHTML = businesses.length
+        ? businesses.map(renderBusiness).join('')
+        : '<div class="empty-note">No businesses in this category.</div>';
+    }catch(error){
+      list.innerHTML = '<div class="empty-note">' + escapeHtml(error.message) + '</div>';
+    }
+  }
+
+  async function init(){
+    if(!HospexAuth.isLoggedIn() || !HospexAuth.isAdmin()){
+      document.getElementById('gateView').style.display = 'block';
+      document.getElementById('gateMessage').textContent = HospexAuth.isLoggedIn()
+        ? 'This account does not have admin access.'
+        : 'Please log in with an admin account to view this dashboard.';
+      return;
+    }
+    document.getElementById('dashView').style.display = 'block';
+    loadBusinesses();
+  }
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+</body></html>

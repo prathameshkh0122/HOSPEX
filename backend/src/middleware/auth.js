@@ -15,4 +15,9 @@ const protect = asyncHandler(async (req, _res, next) => {
   next();
 });
 
-module.exports = { protect };
+const requireAdmin = (req, _res, next) => {
+  if (!req.user || req.user.role !== 'admin') throw httpError(403, 'Admin access required.');
+  next();
+};
+
+module.exports = { protect, requireAdmin };

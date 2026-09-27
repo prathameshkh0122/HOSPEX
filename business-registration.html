@@ -1,0 +1,190 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Business registration · HOSPEX</title><link rel="stylesheet" href="portal.css">
+<style>
+.form-layout{display:grid;grid-template-columns:1fr;gap:0}
+.form{padding:27px}.form h2{font:700 24px 'Playfair Display',Georgia,serif;margin:22px 0 7px}.form h2:first-child{margin-top:0}.form>p.lead{margin:0 0 8px;color:var(--muted);font-size:14px}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:6px}.field-grid .full{grid-column:1/-1}
+.form label{font-size:12px;font-weight:700;display:block;margin-top:14px}
+.form input,.form select,.form textarea{width:100%;margin-top:6px;padding:11px;border:1px solid #e4ccb3;border-radius:8px;background:#fff;font-size:14px}
+.form textarea{height:90px;resize:vertical}
+.section-divider{border-top:1px solid var(--line);margin:22px 0 0}
+.file-field{border:1.5px dashed #d5ae8b;border-radius:10px;background:#f8f0e6;padding:16px;text-align:center;margin-top:8px}
+.file-field input{margin-top:8px}
+.file-hint{color:var(--muted);font-size:11px;margin-top:6px}
+.controls{margin-top:26px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--line);padding-top:18px}
+.form-error{color:#b3261e;font-size:13px;margin-top:14px;display:none;white-space:pre-line}.form-error.show{display:block}
+.panel{display:none}.panel.show{display:block}
+.success{text-align:center;padding:50px 15px}.success .check{width:58px;height:58px;border-radius:50%;background:#f3e2e9;color:var(--green);font-size:28px;display:grid;place-items:center;margin:auto}
+.success h2{font:700 29px 'Playfair Display',Georgia,serif;margin:16px 0 8px}.success p{color:var(--muted);font-size:14px;line-height:1.6;max-width:460px;margin:0 auto}
+.status-pill{display:inline-block;margin-top:14px;padding:8px 14px;border-radius:20px;font-size:12px;font-weight:700}
+.status-pill.pending{background:#fbf0d2;color:#8a6d1f}.status-pill.rejected{background:#fbdada;color:#a13030}.status-pill.verified{background:#dff3e6;color:#1f7a45}
+.gate{padding:60px 15px;text-align:center}.gate .icon{width:60px;height:60px;border-radius:50%;background:#fbe9d2;color:#5b1839;font-size:28px;display:grid;place-items:center;margin:0 auto 16px}
+.gate h2{font:700 27px 'Playfair Display',Georgia,serif;margin:0 0 10px}.gate p{color:var(--muted);font-size:14px;max-width:440px;margin:0 auto 20px;line-height:1.5}
+@media(max-width:700px){.field-grid{grid-template-columns:1fr}.form{padding:21px}}
+</style></head>
+<body>
+<header class="wrap topbar"><a class="brand" href="index.html"><i class="mark"></i>HOSPEX</a><nav class="nav"><a href="index.html">Explore</a><a href="saved.html">Saved</a><a class="active" href="business-registration.html">Business registration</a></nav><a class="button outline" href="index.html">Back to explore</a></header>
+<main class="wrap">
+  <div class="crumbs"><a href="index.html">Explore</a> / Business registration</div>
+  <div class="page-head"><div><h1>Register your business</h1><p>Submit your business and payment details for admin verification. Verified businesses can list resources for other members to rent.</p></div></div>
+
+  <div id="gateView" class="card gate" style="display:none">
+    <div class="icon">⚠</div>
+    <h2 id="gateTitle">Please log in first.</h2>
+    <p id="gateMessage">You need a HOSPEX account before registering a business.</p>
+    <a class="button primary" href="index.html">Go to homepage to log in</a>
+  </div>
+
+  <div id="statusView" class="card" style="display:none">
+    <div class="success">
+      <div class="check" id="statusIcon">✓</div>
+      <h2 id="statusTitle">Application submitted</h2>
+      <p id="statusMessage">Your business is pending admin verification.</p>
+      <div id="statusPill"></div>
+      <div id="reapplyWrap" style="display:none;margin-top:22px"><button class="button primary" onclick="showForm()">Re-submit application</button></div>
+    </div>
+  </div>
+
+  <section class="form card" id="formView" style="display:none">
+    <h2>Business details</h2><p class="lead">Tell us about your hospitality business.</p>
+    <div class="field-grid">
+      <label class="full">Business name<input id="businessName" placeholder="e.g. Hotel Suncrest"></label>
+      <label>Business type<select id="businessType"><option value="">Select type</option><option>Hotel</option><option>Restaurant</option><option>Cafe</option><option>Resort</option><option>Banquet hall</option><option>Caterer</option><option>Event venue</option><option>Other</option></select></label>
+      <label>Owner name<input id="ownerName" placeholder="Full name of the owner"></label>
+      <label class="full">Address<input id="address" placeholder="Street address"></label>
+      <label>City / State<input id="cityState" placeholder="e.g. Mumbai, Maharashtra"></label>
+      <label>Contact number<input id="contactNumber" type="tel" placeholder="+91 XXXXX XXXXX"></label>
+      <label>Business email<input id="businessEmail" type="email" placeholder="contact@yourbusiness.com"></label>
+      <label class="full">Business description<textarea id="description" placeholder="What does your business do, and what might you list on HOSPEX?"></textarea></label>
+    </div>
+
+    <div class="section-divider"></div>
+    <h2>License details</h2><p class="lead">Used to confirm your business is legitimate and registered.</p>
+    <div class="field-grid">
+      <label class="full">License / business registration number<input id="licenseNumber" placeholder="e.g. GSTIN, FSSAI or trade license number"></label>
+    </div>
+    <label>Upload license / registration document</label>
+    <div class="file-field"><input id="licenseDocument" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf"><div class="file-hint">JPG, PNG, WebP or PDF · max 5 MB</div></div>
+
+    <div class="section-divider"></div>
+    <h2>Payment details</h2><p class="lead">So other businesses can pay you for exchanged resources.</p>
+    <div class="field-grid">
+      <label class="full">UPI ID<input id="upiId" placeholder="yourname@upi"></label>
+    </div>
+    <label>Upload payment QR code</label>
+    <div class="file-field"><input id="qrCode" type="file" accept=".jpg,.jpeg,.png,.webp"><div class="file-hint">JPG, PNG or WebP · max 5 MB</div></div>
+
+    <div class="form-error" id="formError"></div>
+    <div class="controls">
+      <button class="button primary" id="submitBtn" onclick="submitApplication()">Send for verification</button>
+    </div>
+  </section>
+</main>
+<footer class="footer"><div class="wrap"><a class="brand" href="index.html"><i class="mark"></i>HOSPEX</a><small>Smart resource exchange for hospitality.</small></div></footer>
+<div class="toast" id="toast" role="status"></div>
+<script src="auth.js"></script>
+<script>
+  function toast(message){ const t=document.getElementById('toast'); t.textContent=message; t.classList.add('show'); clearTimeout(window._toastTimer); window._toastTimer=setTimeout(()=>t.classList.remove('show'),2500) }
+
+  function showForm(){
+    document.getElementById('statusView').style.display = 'none';
+    document.getElementById('formView').style.display = 'block';
+  }
+
+  async function submitApplication(){
+    const errorEl = document.getElementById('formError');
+    errorEl.classList.remove('show');
+
+    const fields = {
+      businessName: document.getElementById('businessName').value.trim(),
+      businessType: document.getElementById('businessType').value.trim(),
+      ownerName: document.getElementById('ownerName').value.trim(),
+      address: document.getElementById('address').value.trim(),
+      cityState: document.getElementById('cityState').value.trim(),
+      contactNumber: document.getElementById('contactNumber').value.trim(),
+      businessEmail: document.getElementById('businessEmail').value.trim(),
+      description: document.getElementById('description').value.trim(),
+      licenseNumber: document.getElementById('licenseNumber').value.trim(),
+      upiId: document.getElementById('upiId').value.trim()
+    };
+    const licenseFile = document.getElementById('licenseDocument').files[0];
+    const qrFile = document.getElementById('qrCode').files[0];
+
+    const missing = Object.entries(fields).filter(([key, value]) => key !== 'description' && !value).map(([key]) => key);
+    if(missing.length){
+      errorEl.textContent = 'Please fill in all required fields: ' + missing.join(', ');
+      errorEl.classList.add('show');
+      return;
+    }
+    if(!licenseFile){ errorEl.textContent = 'Please upload your license / registration document.'; errorEl.classList.add('show'); return }
+    if(!qrFile){ errorEl.textContent = 'Please upload your payment QR code.'; errorEl.classList.add('show'); return }
+    const maxSize = 5 * 1024 * 1024;
+    if(licenseFile.size > maxSize || qrFile.size > maxSize){ errorEl.textContent = 'Files must be 5 MB or smaller.'; errorEl.classList.add('show'); return }
+
+    const formData = new FormData();
+    Object.entries(fields).forEach(([key, value]) => formData.append(key, value));
+    formData.append('licenseDocument', licenseFile);
+    formData.append('qrCode', qrFile);
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+    try{
+      await HospexAuth.apiFetch('/business/register', { method:'POST', body: formData });
+      toast('Business submitted for verification.');
+      await checkStatus();
+    }catch(error){
+      errorEl.textContent = error.message;
+      errorEl.classList.add('show');
+    }finally{
+      btn.disabled = false; btn.textContent = 'Send for verification';
+    }
+  }
+
+  function renderStatus(status, business){
+    document.getElementById('formView').style.display = 'none';
+    document.getElementById('statusView').style.display = 'block';
+    const icon = document.getElementById('statusIcon');
+    const title = document.getElementById('statusTitle');
+    const message = document.getElementById('statusMessage');
+    const pill = document.getElementById('statusPill');
+    const reapplyWrap = document.getElementById('reapplyWrap');
+    reapplyWrap.style.display = 'none';
+    if(status === 'pending'){
+      icon.textContent = '⏳'; title.textContent = 'Application pending';
+      message.textContent = 'Your business application has been submitted and is awaiting admin review. You will be notified once it is verified.';
+      pill.innerHTML = '<span class="status-pill pending">Pending verification</span>';
+    } else if(status === 'verified'){
+      icon.textContent = '✓'; title.textContent = 'Business verified';
+      message.textContent = 'Your business has been verified. You can now list your resources.';
+      pill.innerHTML = '<span class="status-pill verified">Verified</span>';
+    } else if(status === 'rejected'){
+      icon.textContent = '✕'; title.textContent = 'Application rejected';
+      message.textContent = 'Reason: ' + (business && business.rejectionReason ? business.rejectionReason : 'No reason was given.');
+      pill.innerHTML = '<span class="status-pill rejected">Rejected</span>';
+      reapplyWrap.style.display = 'block';
+    }
+  }
+
+  async function checkStatus(){
+    if(!HospexAuth.isLoggedIn()){
+      document.getElementById('gateView').style.display = 'block';
+      document.getElementById('gateTitle').textContent = 'Please log in first.';
+      document.getElementById('gateMessage').textContent = 'You need a HOSPEX account before registering a business.';
+      return;
+    }
+    try{
+      const result = await HospexAuth.apiFetch('/business/mine');
+      const status = result.data.verificationStatus;
+      if(status === 'none'){
+        showForm();
+      } else {
+        renderStatus(status, result.data.business);
+      }
+    }catch(error){
+      document.getElementById('gateView').style.display = 'block';
+      document.getElementById('gateTitle').textContent = 'Something went wrong.';
+      document.getElementById('gateMessage').textContent = error.message;
+    }
+  }
+  document.addEventListener('DOMContentLoaded', checkStatus);
+</script>
+</body></html>

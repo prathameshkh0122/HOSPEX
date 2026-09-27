@@ -1,4 +1,5 @@
 const Resource = require('../models/Resource');
+const Business = require('../models/Business');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
@@ -18,6 +19,10 @@ exports.list = asyncHandler(async (req, res) => {
 });
 
 exports.create = asyncHandler(async (req, res) => {
+  const business = await Business.findOne({ user: req.user._id });
+  if (!business || business.verificationStatus !== 'verified') {
+    throw httpError(403, 'Your business must be verified by admin before listing resources.');
+  }
   const { name, category, quantity, condition, exchangeType, description = '' } = req.body;
   if (!name || !category || quantity === undefined || !condition || !exchangeType) throw httpError(400, 'Name, category, quantity, condition and exchange type are required.');
   if (!Number.isSafeInteger(quantity) || quantity < 1) throw httpError(400, 'Quantity must be a positive whole number.');
