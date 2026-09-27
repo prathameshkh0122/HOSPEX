@@ -4,15 +4,29 @@ const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
 exports.list = asyncHandler(async (req, res) => {
-  const { search, category, distance, page = 1, limit = 24 } = req.query;
+  const { search, category, distance, availableFrom, availableTo, page = 1, limit = 24 } = req.query;
   const filter = { status: 'available' };
   if (category && category !== 'all') filter.category = category;
   if (distance && distance !== 'all' && Number.isFinite(Number(distance))) filter.distance = { $lte: Number(distance) };
   if (search) {
-    const escaped = String(search).slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const pattern = new RegExp(escaped, 'i');
-    filter.$or = [{ name: pattern }, { description: pattern }, { ownerName: pattern }, { location: pattern }];
+    // Each word may match a different listing field: “chairs Mumbai” matches
+    // “Banquet Chairs” in the title and “Mumbai” in its location.
+    const terms = String(search).slice(0, 100).trim().split(/\s+/).filter(Boolean).slice(0, 8);
+    filter.$and = terms.map((term) => {
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pattern = new RegExp(escaped, 'i');
+      return { $or: [{ name: pattern }, { description: pattern }, { ownerName: pattern }, { location: pattern }] };
+    });
   }
+  const from = availableFrom ? new Date(availableFrom) : null;
+  const to = availableTo ? new Date(availableTo) : null;
+  if ((availableFrom && Number.isNaN(from.getTime())) || (availableTo && Number.isNaN(to.getTime())) || (from && to && from > to)) {
+    throw httpError(400, 'Please use a valid availability date range.');
+  }
+  if (from) filter.availableFrom = { $lte: from };
+  if (to) filter.availableTo = { $gte: to };
+  if (from && !to) filter.availableTo = { $gte: from };
+  if (to && !from) filter.availableFrom = { $lte: to };
   const safePage = Math.max(1, parseInt(page, 10) || 1);
   const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 24));
   const [resources, total] = await Promise.all([
