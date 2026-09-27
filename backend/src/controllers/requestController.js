@@ -2,23 +2,32 @@ const ExchangeRequest = require('../models/ExchangeRequest');
 const Resource = require('../models/Resource');
 const Notification = require('../models/Notification');
 const Chat = require('../models/Chat');
+const Business = require('../models/Business');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
 exports.create = asyncHandler(async (req, res) => {
-  const { resourceId, quantity, message = '' } = req.body;
+  const { resourceId, quantity, message = '', requestType = 'rent' } = req.body;
   if (!resourceId || quantity === undefined) throw httpError(400, 'Resource and quantity are required.');
   if (!Number.isSafeInteger(quantity) || quantity < 1) throw httpError(400, 'Requested quantity must be a positive whole number.');
   const resource = await Resource.findById(resourceId);
   if (!resource || resource.status !== 'available') throw httpError(404, 'This resource is no longer available.');
   if (resource.owner && resource.owner.equals(req.user._id)) throw httpError(400, 'You cannot request a resource listed by your own business.');
   if (Number(quantity) > resource.quantity) throw httpError(400, 'Requested quantity exceeds the available amount.');
-  const request = await ExchangeRequest.create({ resource: resource._id, owner: resource.owner, requestedBy: req.user._id, quantity, message });
+  if (!['rent', 'exchange'].includes(requestType)) throw httpError(400, 'Request type must be rent or exchange.');
+  if (requestType === 'exchange') {
+    const [requesterBusiness, ownerBusiness] = await Promise.all([
+      Business.findOne({ user: req.user._id, verificationStatus: 'verified' }),
+      Business.findOne({ user: resource.owner, verificationStatus: 'verified' })
+    ]);
+    if (!requesterBusiness || !ownerBusiness) throw httpError(403, 'Only verified vendors can exchange resources with another verified vendor.');
+  }
+  const request = await ExchangeRequest.create({ resource: resource._id, owner: resource.owner, requestedBy: req.user._id, quantity, message, requestType });
   if (resource.owner) {
     await Notification.create({
       user: resource.owner,
-      title: 'New rent request',
-      message: `${req.user.businessName} wants to rent ${quantity} × ${resource.name}.`,
+      title: `New ${requestType} request`,
+      message: `${req.user.businessName} wants to ${requestType} ${quantity} × ${resource.name}.`,
       action: { type: 'request', request: request._id }
     });
   }

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const Business = require('../models/Business');
 const Notification = require('../models/Notification');
+const Resource = require('../models/Resource');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
@@ -77,4 +78,13 @@ exports.mine = asyncHandler(async (req, res) => {
       verificationStatus: business ? business.verificationStatus : 'none'
     }
   });
+});
+
+// Public-facing vendor data deliberately excludes payment identifiers and documents.
+exports.publicProfile = asyncHandler(async (req, res) => {
+  const business = await Business.findOne({ user: req.params.userId, verificationStatus: 'verified' }).lean();
+  if (!business) throw httpError(404, 'Verified vendor profile not found.');
+  const resources = await Resource.find({ owner: business.user, status: 'available' }).sort({ createdAt: -1 }).lean();
+  const { licenseDocument, licenseNumber, upiId, qrCode, ...publicBusiness } = business;
+  res.json({ success: true, data: { business: publicBusiness, resources } });
 });

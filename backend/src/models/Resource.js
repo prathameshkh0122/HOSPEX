@@ -5,7 +5,7 @@ const resourceSchema = new mongoose.Schema({
   category: { type: String, required: true, enum: ['food', 'furniture', 'equipment', 'linen', 'supplies', 'packaging'] },
   quantity: { type: Number, required: true, min: 1, max: 1000000, validate: Number.isInteger },
   condition: { type: String, required: true, enum: ['new', 'good', 'used'] },
-  exchangeType: { type: String, required: true, enum: ['exchange', 'sell', 'donate'] },
+  exchangeType: { type: String, required: true, enum: ['exchange', 'rent', 'sell', 'donate'] },
   description: { type: String, trim: true, maxlength: 1000, default: '' },
   image: { type: String, default: '' },
   // ownerName is a snapshot so listings remain readable if a business is removed.
