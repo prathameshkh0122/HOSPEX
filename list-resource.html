@@ -29,7 +29,10 @@
         <div class="field-grid">
           <label class="full">Resource title<input id="resourceName" placeholder="e.g. White banquet chairs, set of 100"></label>
           <label>Quantity<input id="resourceQuantity" type="number" min="1" step="1" placeholder="e.g. 100"></label>
+          <label>Price per piece (₹)<input id="resourcePrice" type="number" min="0" step="0.01" placeholder="e.g. 45"></label>
           <label>Resource location<input id="resourceLocation" placeholder="e.g. Andheri East, Mumbai"></label>
+          <label>Available from<input id="availableFrom" type="date"></label>
+          <label>Available to<input id="availableTo" type="date"></label>
           <label class="full">Description<textarea id="resourceDescription" placeholder="Share the condition, dimensions or anything renters should know."></textarea></label>
           <label class="full">Resource photo <input id="resourceImage" type="file" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG or WebP, up to 5 MB.</small></label>
         </div>
@@ -86,7 +89,10 @@
     document.getElementById('s'+n).classList.add('active');
     if(n===3){
       const name = document.getElementById('resourceName').value;
-      document.getElementById('review').textContent = name ? `"${name}" is ready to be reviewed and published.` : 'Review your listing before publishing it to the HOSPEX network.';
+      const price = document.getElementById('resourcePrice').value;
+      const from = document.getElementById('availableFrom').value;
+      const to = document.getElementById('availableTo').value;
+      document.getElementById('review').textContent = name ? `"${name}" will be published at ₹${price || '—'} per piece, available ${from || '—'} to ${to || '—'}.` : 'Review your listing before publishing it to the HOSPEX network.';
     }
   }
 
@@ -95,13 +101,17 @@
     errorEl.classList.remove('show');
     const name = document.getElementById('resourceName').value.trim();
     const quantity = parseInt(document.getElementById('resourceQuantity').value, 10);
+    const priceInput = document.getElementById('resourcePrice').value.trim();
+    const pricePerPiece = Number(priceInput);
     const description = document.getElementById('resourceDescription').value.trim();
     const location = document.getElementById('resourceLocation').value.trim();
+    const availableFrom = document.getElementById('availableFrom').value;
+    const availableTo = document.getElementById('availableTo').value;
     const category = document.getElementById('resourceCategory').value;
     const condition = document.getElementById('resourceCondition').value;
     const exchangeType = document.getElementById('resourceExchangeType').value;
-    if(!name || !quantity || quantity < 1){
-      errorEl.textContent = 'Please enter a resource title and a valid quantity.';
+    if(!name || !quantity || quantity < 1 || !priceInput || !Number.isFinite(pricePerPiece) || pricePerPiece < 0 || !availableFrom || !availableTo || availableFrom > availableTo){
+      errorEl.textContent = 'Enter a title, valid quantity, non-negative price per piece, and an availability range.';
       errorEl.classList.add('show');
       goToStep(1);
       return;
@@ -111,12 +121,12 @@
     try{
       const image = document.getElementById('resourceImage').files[0];
       const form = new FormData();
-      form.append('name', name); form.append('quantity', quantity); form.append('description', description); form.append('location', location);
+      form.append('name', name); form.append('quantity', quantity); form.append('pricePerPiece', pricePerPiece); form.append('availableFrom', availableFrom); form.append('availableTo', availableTo); form.append('description', description); form.append('location', location);
       form.append('category', category); form.append('condition', condition); form.append('exchangeType', exchangeType);
       if(image) form.append('image', image);
-      await HospexAuth.apiFetch('/resources', { method:'POST', body: form });
+      const result = await HospexAuth.apiFetch('/resources', { method:'POST', body: form });
       toast('Resource listed successfully.');
-      setTimeout(()=>location.href='vendor-profile.html', 900);
+      setTimeout(()=>location.href='resource.html?id='+encodeURIComponent(result.data.resource._id), 900);
     }catch(error){
       errorEl.textContent = error.message;
       errorEl.classList.add('show');

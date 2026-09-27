@@ -27,11 +27,18 @@ exports.create = asyncHandler(async (req, res) => {
   if (!business || business.verificationStatus !== 'verified') {
     throw httpError(403, 'Your business must be verified by admin before listing resources.');
   }
-  const { name, category, condition, exchangeType, description = '', location = '' } = req.body;
+  const { name, category, condition, exchangeType, description = '', location = '', availableFrom, availableTo } = req.body;
   const quantity = Number(req.body.quantity);
+  const pricePerPiece = Number(req.body.pricePerPiece);
   if (!name || !category || quantity === undefined || !condition || !exchangeType) throw httpError(400, 'Name, category, quantity, condition and exchange type are required.');
   if (!Number.isSafeInteger(quantity) || quantity < 1) throw httpError(400, 'Quantity must be a positive whole number.');
-  const resource = await Resource.create({ name, category, quantity, condition, exchangeType, description, location,
+  if (req.body.pricePerPiece === undefined || String(req.body.pricePerPiece).trim() === '' || !Number.isFinite(pricePerPiece) || pricePerPiece < 0 || pricePerPiece > 10000000) throw httpError(400, 'Price per piece must be a valid non-negative amount.');
+  const from = new Date(availableFrom);
+  const to = new Date(availableTo);
+  if (!availableFrom || !availableTo || Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) {
+    throw httpError(400, 'Please provide a valid availability start and end date.');
+  }
+  const resource = await Resource.create({ name, category, quantity, condition, exchangeType, pricePerPiece, availableFrom: from, availableTo: to, description, location,
     image: req.file ? `/uploads/resources/${req.file.filename}` : '',
     owner: req.user._id, ownerName: req.user.businessName, verified: false });
   res.status(201).json({ success: true, message: 'Resource listed successfully.', data: { resource } });
