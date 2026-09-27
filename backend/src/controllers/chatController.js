@@ -16,7 +16,7 @@ exports.mine = asyncHandler(async (req, res) => {
 });
 
 exports.messages = asyncHandler(async (req, res) => {
-  const chat = await Chat.findById(req.params.id);
+  const chat = await Chat.findById(req.params.id).populate('request', 'status paymentStatus requestedBy paymentScreenshot rating');
   if (!chat) throw httpError(404, 'Chat not found.');
   if (!isParticipant(chat, req.user._id)) throw httpError(403, 'You are not part of this chat.');
   const messages = await ChatMessage.find({ chat: chat._id }).populate('sender', 'businessName').sort({ createdAt: 1 }).lean();

@@ -2,6 +2,7 @@ const ExchangeRequest = require('../models/ExchangeRequest');
 const Resource = require('../models/Resource');
 const Notification = require('../models/Notification');
 const Chat = require('../models/Chat');
+const ChatMessage = require('../models/ChatMessage');
 const Business = require('../models/Business');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
@@ -22,7 +23,8 @@ exports.create = asyncHandler(async (req, res) => {
     ]);
     if (!requesterBusiness || !ownerBusiness) throw httpError(403, 'Only verified vendors can exchange resources with another verified vendor.');
   }
-  const request = await ExchangeRequest.create({ resource: resource._id, owner: resource.owner, requestedBy: req.user._id, quantity, message, requestType });
+  const request = await ExchangeRequest.create({ resource: resource._id, owner: resource.owner, requestedBy: req.user._id, quantity, message, requestType,
+    paymentStatus: requestType === 'exchange' ? 'not_required' : 'awaiting_payment' });
   if (resource.owner) {
     await Notification.create({
       user: resource.owner,
@@ -74,11 +76,19 @@ exports.updateStatus = asyncHandler(async (req, res) => {
         stockRestored = true;
         throw httpError(409, 'This request was updated by another user. Please refresh and try again.');
       }
-      const chat = await Chat.findOneAndUpdate(
-        { request: updated._id },
-        { $setOnInsert: { request: updated._id, resource: updated.resource, participants: [updated.owner, updated.requestedBy], lastMessageAt: new Date() } },
-        { new: true, upsert: true }
-      );
+      let chat = await Chat.findOne({ request: updated._id });
+      if (!chat) {
+        chat = await Chat.create({ request: updated._id, resource: updated.resource, participants: [updated.owner, updated.requestedBy], lastMessageAt: new Date() });
+        const ownerBusiness = await Business.findOne({ user: updated.owner }).lean();
+        if (ownerBusiness && updated.requestType === 'rent') {
+          await ChatMessage.create({
+            chat: chat._id,
+            sender: updated.owner,
+            text: `Rent request accepted. Please pay to UPI ID: ${ownerBusiness.upiId}. Upload your payment screenshot here after paying.`,
+            image: ownerBusiness.qrCode || ''
+          });
+        }
+      }
       await Notification.create({
         user: updated.requestedBy,
         title: 'Rent request accepted',
@@ -109,4 +119,50 @@ exports.updateStatus = asyncHandler(async (req, res) => {
     await Notification.create({ user: updated.requestedBy, title: 'Rent request declined', message: `Your request for ${resource ? resource.name : 'this resource'} was declined.` });
   }
   res.json({ success: true, message: `Request ${status}.`, data: { request: updated } });
+});
+
+exports.submitPayment = asyncHandler(async (req, res) => {
+  if (!req.file) throw httpError(400, 'Please upload a payment screenshot.');
+  const request = await ExchangeRequest.findOne({ _id: req.params.id, requestedBy: req.user._id, status: 'accepted' });
+  if (!request) throw httpError(404, 'Accepted rent request not found.');
+  if (request.requestType !== 'rent') throw httpError(400, 'Payment screenshots are only needed for rent requests.');
+  request.paymentStatus = 'submitted';
+  request.paymentScreenshot = `/uploads/payments/${req.file.filename}`;
+  request.paymentSubmittedAt = new Date();
+  await request.save();
+  await Notification.create({
+    user: request.owner,
+    title: 'Payment screenshot submitted',
+    message: `${req.user.businessName} submitted payment proof. Please verify it.`,
+    action: { type: 'payment', request: request._id }
+  });
+  res.json({ success: true, message: 'Payment screenshot submitted for vendor verification.', data: { request } });
+});
+
+exports.verifyPayment = asyncHandler(async (req, res) => {
+  const { status } = req.body;
+  if (!['verified', 'rejected'].includes(status)) throw httpError(400, 'Payment status must be verified or rejected.');
+  const request = await ExchangeRequest.findOne({ _id: req.params.id, owner: req.user._id, status: 'accepted', paymentStatus: 'submitted' });
+  if (!request) throw httpError(404, 'Submitted payment not found.');
+  request.paymentStatus = status;
+  request.paymentVerifiedAt = status === 'verified' ? new Date() : null;
+  await request.save();
+  await Notification.create({
+    user: request.requestedBy,
+    title: status === 'verified' ? 'Payment verified' : 'Payment needs attention',
+    message: status === 'verified' ? 'Your payment was verified. You can now rate this vendor.' : 'Your payment proof was not accepted. Please upload a new screenshot.'
+  });
+  res.json({ success: true, message: `Payment ${status}.`, data: { request } });
+});
+
+exports.rate = asyncHandler(async (req, res) => {
+  const score = Number(req.body.score);
+  const comment = String(req.body.comment || '').trim();
+  if (!Number.isInteger(score) || score < 1 || score > 5) throw httpError(400, 'Rating must be a whole number from 1 to 5.');
+  const request = await ExchangeRequest.findOne({ _id: req.params.id, requestedBy: req.user._id, paymentStatus: 'verified' });
+  if (!request) throw httpError(404, 'A verified payment is required before rating this vendor.');
+  if (request.rating && request.rating.score) throw httpError(409, 'You have already rated this order.');
+  request.rating = { score, comment, ratedAt: new Date() };
+  await request.save();
+  res.json({ success: true, message: 'Thanks for rating this vendor.', data: { request } });
 });

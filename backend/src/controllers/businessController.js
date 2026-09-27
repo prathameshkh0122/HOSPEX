@@ -2,6 +2,7 @@ const fs = require('fs');
 const Business = require('../models/Business');
 const Notification = require('../models/Notification');
 const Resource = require('../models/Resource');
+const ExchangeRequest = require('../models/ExchangeRequest');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
@@ -70,12 +71,16 @@ exports.register = asyncHandler(async (req, res) => {
 });
 
 exports.mine = asyncHandler(async (req, res) => {
-  const business = await Business.findOne({ user: req.user._id });
+  const [business, ratingRows] = await Promise.all([
+    Business.findOne({ user: req.user._id }),
+    ExchangeRequest.aggregate([{ $match: { owner: req.user._id, 'rating.score': { $ne: null } } }, { $group: { _id: null, average: { $avg: '$rating.score' }, count: { $sum: 1 } } }])
+  ]);
   res.json({
     success: true,
     data: {
       business,
-      verificationStatus: business ? business.verificationStatus : 'none'
+      verificationStatus: business ? business.verificationStatus : 'none',
+      rating: ratingRows[0] ? { average: ratingRows[0].average, count: ratingRows[0].count } : { average: 0, count: 0 }
     }
   });
 });
@@ -84,7 +89,11 @@ exports.mine = asyncHandler(async (req, res) => {
 exports.publicProfile = asyncHandler(async (req, res) => {
   const business = await Business.findOne({ user: req.params.userId, verificationStatus: 'verified' }).lean();
   if (!business) throw httpError(404, 'Verified vendor profile not found.');
-  const resources = await Resource.find({ owner: business.user, status: 'available' }).sort({ createdAt: -1 }).lean();
+  const [resources, ratingRows] = await Promise.all([
+    Resource.find({ owner: business.user, status: 'available' }).sort({ createdAt: -1 }).lean(),
+    ExchangeRequest.aggregate([{ $match: { owner: business.user, 'rating.score': { $ne: null } } }, { $group: { _id: null, average: { $avg: '$rating.score' }, count: { $sum: 1 } } }])
+  ]);
   const { licenseDocument, licenseNumber, upiId, qrCode, ...publicBusiness } = business;
-  res.json({ success: true, data: { business: publicBusiness, resources } });
+  const rating = ratingRows[0] ? { average: ratingRows[0].average, count: ratingRows[0].count } : { average: 0, count: 0 };
+  res.json({ success: true, data: { business: publicBusiness, resources, rating } });
 });

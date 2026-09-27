@@ -8,7 +8,11 @@ exports.list = asyncHandler(async (req, res) => {
   const filter = { status: 'available' };
   if (category && category !== 'all') filter.category = category;
   if (distance && distance !== 'all' && Number.isFinite(Number(distance))) filter.distance = { $lte: Number(distance) };
-  if (search) filter.$text = { $search: String(search).slice(0, 100) };
+  if (search) {
+    const escaped = String(search).slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(escaped, 'i');
+    filter.$or = [{ name: pattern }, { description: pattern }, { ownerName: pattern }, { location: pattern }];
+  }
   const safePage = Math.max(1, parseInt(page, 10) || 1);
   const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 24));
   const [resources, total] = await Promise.all([
@@ -23,11 +27,11 @@ exports.create = asyncHandler(async (req, res) => {
   if (!business || business.verificationStatus !== 'verified') {
     throw httpError(403, 'Your business must be verified by admin before listing resources.');
   }
-  const { name, category, condition, exchangeType, description = '' } = req.body;
+  const { name, category, condition, exchangeType, description = '', location = '' } = req.body;
   const quantity = Number(req.body.quantity);
   if (!name || !category || quantity === undefined || !condition || !exchangeType) throw httpError(400, 'Name, category, quantity, condition and exchange type are required.');
   if (!Number.isSafeInteger(quantity) || quantity < 1) throw httpError(400, 'Quantity must be a positive whole number.');
-  const resource = await Resource.create({ name, category, quantity, condition, exchangeType, description,
+  const resource = await Resource.create({ name, category, quantity, condition, exchangeType, description, location,
     image: req.file ? `/uploads/resources/${req.file.filename}` : '',
     owner: req.user._id, ownerName: req.user.businessName, verified: false });
   res.status(201).json({ success: true, message: 'Resource listed successfully.', data: { resource } });

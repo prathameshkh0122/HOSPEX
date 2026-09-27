@@ -9,7 +9,8 @@ const LICENSE_DIR = path.join(UPLOAD_ROOT, 'licenses');
 const QR_DIR = path.join(UPLOAD_ROOT, 'qr');
 const RESOURCE_DIR = path.join(UPLOAD_ROOT, 'resources');
 const CHAT_DIR = path.join(UPLOAD_ROOT, 'chat');
-for (const dir of [LICENSE_DIR, QR_DIR, RESOURCE_DIR, CHAT_DIR]) fs.mkdirSync(dir, { recursive: true });
+const PAYMENT_DIR = path.join(UPLOAD_ROOT, 'payments');
+for (const dir of [LICENSE_DIR, QR_DIR, RESOURCE_DIR, CHAT_DIR, PAYMENT_DIR]) fs.mkdirSync(dir, { recursive: true });
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
@@ -72,5 +73,6 @@ module.exports = {
   handleBusinessUploads,
   resourceImageUpload: imageUpload('image', RESOURCE_DIR),
   chatImageUpload: imageUpload('image', CHAT_DIR),
-  LICENSE_DIR, QR_DIR, RESOURCE_DIR, CHAT_DIR, UPLOAD_ROOT
+  paymentScreenshotUpload: imageUpload('paymentScreenshot', PAYMENT_DIR),
+  LICENSE_DIR, QR_DIR, RESOURCE_DIR, CHAT_DIR, PAYMENT_DIR, UPLOAD_ROOT
 };

@@ -29,6 +29,7 @@
         <div class="field-grid">
           <label class="full">Resource title<input id="resourceName" placeholder="e.g. White banquet chairs, set of 100"></label>
           <label>Quantity<input id="resourceQuantity" type="number" min="1" step="1" placeholder="e.g. 100"></label>
+          <label>Resource location<input id="resourceLocation" placeholder="e.g. Andheri East, Mumbai"></label>
           <label class="full">Description<textarea id="resourceDescription" placeholder="Share the condition, dimensions or anything renters should know."></textarea></label>
           <label class="full">Resource photo <input id="resourceImage" type="file" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG or WebP, up to 5 MB.</small></label>
         </div>
@@ -95,6 +96,7 @@
     const name = document.getElementById('resourceName').value.trim();
     const quantity = parseInt(document.getElementById('resourceQuantity').value, 10);
     const description = document.getElementById('resourceDescription').value.trim();
+    const location = document.getElementById('resourceLocation').value.trim();
     const category = document.getElementById('resourceCategory').value;
     const condition = document.getElementById('resourceCondition').value;
     const exchangeType = document.getElementById('resourceExchangeType').value;
@@ -109,7 +111,7 @@
     try{
       const image = document.getElementById('resourceImage').files[0];
       const form = new FormData();
-      form.append('name', name); form.append('quantity', quantity); form.append('description', description);
+      form.append('name', name); form.append('quantity', quantity); form.append('description', description); form.append('location', location);
       form.append('category', category); form.append('condition', condition); form.append('exchangeType', exchangeType);
       if(image) form.append('image', image);
       await HospexAuth.apiFetch('/resources', { method:'POST', body: form });

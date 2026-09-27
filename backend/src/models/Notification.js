@@ -6,7 +6,7 @@ const notificationSchema = new mongoose.Schema({
   message: { type: String, required: true, trim: true, maxlength: 500 },
   read: { type: Boolean, default: false },
   action: {
-    type: { type: String, enum: ['', 'request'], default: '' },
+    type: { type: String, enum: ['', 'request', 'payment'], default: '' },
     request: { type: mongoose.Schema.Types.ObjectId, ref: 'ExchangeRequest', default: null }
   }
 }, { timestamps: true });
