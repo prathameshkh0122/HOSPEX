@@ -73,6 +73,8 @@ Base path: `/api/v1`. Successful responses use `{ "success": true, "data": ... }
 | POST | `/requests` | Bearer token | Request a resource |
 | PATCH | `/requests/:id/status` | Bearer token | Accept, reject or complete a request |
 | GET | `/stats` | No | Marketplace counts |
+| GET | `/twin/weather?latitude=&longitude=&name=` | No | Proxied live weather and three-day forecast from Open-Meteo |
+| GET | `/twin/social-signals?location=` | No | Recent public weather/travel discussion signals from Reddit search |
 | GET | `/business/mine` | Bearer token | Current user's business + verification status |
 | POST | `/business/register` | Bearer token, `multipart/form-data` | Submit a business for verification (license doc + QR code) |
 | GET | `/notifications/mine` | Bearer token | Current user's notifications + unread count |
@@ -84,6 +86,14 @@ Base path: `/api/v1`. Successful responses use `{ "success": true, "data": ... }
 | POST | `/admin/businesses/:id/reject` | Bearer token, **admin** | Reject a business; body `{ "reason": "..." }` (required); notifies the owner |
 
 Protected requests send `Authorization: Bearer <token>`.
+
+## Weather-driven digital twin
+
+Open `http://localhost:5000/weather-twin.html` (or choose **Weather Twin** in the marketplace navigation). This is an integrated HOSPEX operations workspace, not a separate application. Its server-side weather route retrieves current conditions and a 3-day forecast from Open-Meteo and caches each forecast for eight minutes. The social-signal route retrieves recent public Reddit search results for the selected area and caches them for ten minutes. No weather API key is required.
+
+The page uses OpenStreetMap/Leaflet to show the weather point and marketplace resources. Users can optionally permit browser geolocation to centre the map and load a local forecast; the coordinates are used only for that request and are not persisted. The rainfall, temperature, disruption-duration and flooding controls re-run the impact model in the browser. The model deliberately displays both a predicted percentage change and an uncertainty range, and includes normal, heavy rain, heatwave and extended-storm presets.
+
+The model is an explainable, rule-weighted operational predictor: rainfall, duration, flooding and heat influence outdoor availability, indoor demand, covered parking, logistics, cooling/water demand and traveler cancellation probability. It is suitable for decision support and scenario planning, not for emergency dispatch or as a substitute for verified weather/emergency agencies. Public social posts are presented as early-warning context and are not treated as verified reports.
 
 - Register body: `{ "businessName": "...", "businessType": "hotel", "email": "...", "password": "at least 8 characters" }`
 - Resource body: `{ "name": "...", "category": "furniture", "quantity": 10, "condition": "good", "exchangeType": "donate", "description": "..." }`

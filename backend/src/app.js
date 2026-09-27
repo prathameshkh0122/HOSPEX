@@ -25,6 +25,7 @@ app.use('/api/v1/business', rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, sta
 app.use('/api/v1/admin', rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: 'draft-7', legacyHeaders: false }), require('./routes/adminRoutes'));
 app.use('/api/v1/notifications', require('./routes/notificationRoutes'));
 app.use('/api/v1/chats', require('./routes/chatRoutes'));
+app.use('/api/v1/twin', require('./routes/twinRoutes'));
 
 // Uploaded business documents (license/QR). Filenames are random and
 // unguessable; this directory holds nothing but those uploads.
