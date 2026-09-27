@@ -7,7 +7,9 @@ const httpError = require('./httpError');
 const UPLOAD_ROOT = path.join(__dirname, '..', '..', 'uploads');
 const LICENSE_DIR = path.join(UPLOAD_ROOT, 'licenses');
 const QR_DIR = path.join(UPLOAD_ROOT, 'qr');
-for (const dir of [LICENSE_DIR, QR_DIR]) fs.mkdirSync(dir, { recursive: true });
+const RESOURCE_DIR = path.join(UPLOAD_ROOT, 'resources');
+const CHAT_DIR = path.join(UPLOAD_ROOT, 'chat');
+for (const dir of [LICENSE_DIR, QR_DIR, RESOURCE_DIR, CHAT_DIR]) fs.mkdirSync(dir, { recursive: true });
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
@@ -47,4 +49,28 @@ function handleBusinessUploads(req, res, next) {
   });
 }
 
-module.exports = { handleBusinessUploads, LICENSE_DIR, QR_DIR, UPLOAD_ROOT };
+function imageUpload(fieldname, directory) {
+  const upload = multer({
+    storage: multer.diskStorage({
+      destination(_req, _file, cb) { cb(null, directory); },
+      filename(_req, file, cb) { cb(null, `${crypto.randomBytes(16).toString('hex')}${path.extname(file.originalname).toLowerCase()}`); }
+    }),
+    fileFilter(_req, file, cb) {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) return cb(httpError(400, 'Only JPG, PNG or WebP images are allowed.'));
+      cb(null, true);
+    },
+    limits: { fileSize: MAX_FILE_SIZE }
+  }).single(fieldname);
+  return (req, res, next) => upload(req, res, (error) => {
+    if (!error) return next();
+    if (error.code === 'LIMIT_FILE_SIZE') return next(httpError(400, 'Images must be 5 MB or smaller.'));
+    return next(error.status ? error : httpError(400, error.message || 'Image upload failed.'));
+  });
+}
+
+module.exports = {
+  handleBusinessUploads,
+  resourceImageUpload: imageUpload('image', RESOURCE_DIR),
+  chatImageUpload: imageUpload('image', CHAT_DIR),
+  LICENSE_DIR, QR_DIR, RESOURCE_DIR, CHAT_DIR, UPLOAD_ROOT
+};

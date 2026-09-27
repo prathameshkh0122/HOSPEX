@@ -1,5 +1,7 @@
 const ExchangeRequest = require('../models/ExchangeRequest');
 const Resource = require('../models/Resource');
+const Notification = require('../models/Notification');
+const Chat = require('../models/Chat');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 
@@ -12,6 +14,14 @@ exports.create = asyncHandler(async (req, res) => {
   if (resource.owner && resource.owner.equals(req.user._id)) throw httpError(400, 'You cannot request a resource listed by your own business.');
   if (Number(quantity) > resource.quantity) throw httpError(400, 'Requested quantity exceeds the available amount.');
   const request = await ExchangeRequest.create({ resource: resource._id, owner: resource.owner, requestedBy: req.user._id, quantity, message });
+  if (resource.owner) {
+    await Notification.create({
+      user: resource.owner,
+      title: 'New rent request',
+      message: `${req.user.businessName} wants to rent ${quantity} × ${resource.name}.`,
+      action: { type: 'request', request: request._id }
+    });
+  }
   res.status(201).json({ success: true, message: 'Request sent successfully.', data: { request } });
 });
 
@@ -55,10 +65,26 @@ exports.updateStatus = asyncHandler(async (req, res) => {
         stockRestored = true;
         throw httpError(409, 'This request was updated by another user. Please refresh and try again.');
       }
-      return res.json({ success: true, message: 'Request accepted.', data: { request: updated, resource } });
+      const chat = await Chat.findOneAndUpdate(
+        { request: updated._id },
+        { $setOnInsert: { request: updated._id, resource: updated.resource, participants: [updated.owner, updated.requestedBy], lastMessageAt: new Date() } },
+        { new: true, upsert: true }
+      );
+      await Notification.create({
+        user: updated.requestedBy,
+        title: 'Rent request accepted',
+        message: `Your request for ${resource.name} was accepted. Your chat is ready.`,
+        action: { type: '', request: null }
+      });
+      return res.json({ success: true, message: 'Request accepted and chat created.', data: { request: updated, resource, chat } });
     } catch (error) {
       if (!stockRestored) {
-        await Resource.updateOne({ _id: resource._id }, { $inc: { quantity: request.quantity }, $set: { status: 'available' } });
+        // Only roll stock back when the request update itself did not succeed.
+        // Chat/notification failures must not undo an already accepted rental.
+        const latestRequest = await ExchangeRequest.findById(request._id).select('status').lean();
+        if (latestRequest && latestRequest.status === 'pending') {
+          await Resource.updateOne({ _id: resource._id }, { $inc: { quantity: request.quantity }, $set: { status: 'available' } });
+        }
       }
       throw error;
     }
@@ -69,5 +95,9 @@ exports.updateStatus = asyncHandler(async (req, res) => {
     { _id: request._id, status: allowedCurrentStatus }, { $set: { status } }, { new: true }
   );
   if (!updated) throw httpError(400, 'This request can no longer be updated.');
+  if (status === 'rejected') {
+    const resource = await Resource.findById(updated.resource).lean();
+    await Notification.create({ user: updated.requestedBy, title: 'Rent request declined', message: `Your request for ${resource ? resource.name : 'this resource'} was declined.` });
+  }
   res.json({ success: true, message: `Request ${status}.`, data: { request: updated } });
 });

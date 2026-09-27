@@ -30,6 +30,7 @@
           <label class="full">Resource title<input id="resourceName" placeholder="e.g. White banquet chairs, set of 100"></label>
           <label>Quantity<input id="resourceQuantity" type="number" min="1" step="1" placeholder="e.g. 100"></label>
           <label class="full">Description<textarea id="resourceDescription" placeholder="Share the condition, dimensions or anything renters should know."></textarea></label>
+          <label class="full">Resource photo <input id="resourceImage" type="file" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG or WebP, up to 5 MB.</small></label>
         </div>
         <div class="controls"><button class="button primary" onclick="goToStep(2)">Continue →</button></div>
       </div>
@@ -70,7 +71,7 @@
     </section>
   </div>
 </main>
-<footer class="footer"><div class="wrap"><a class="brand" href="index.html"><i class="mark"></i>HOSPEX</a><small>Smart resource exchange for hospitality.</small></div></footer>
+<footer class="footer"><div class="wrap"><a class="brand" href="index.html"><i class="mark"></i>HOSPEX</a><small>Support: soumyadeep@hospex.com · Helpline: 1800-315-0267</small></div></footer>
 <div class="toast" id="toast" role="status"></div>
 <script src="auth.js"></script>
 <script>
@@ -105,9 +106,14 @@
     const btn = document.getElementById('publishBtn');
     btn.disabled = true; btn.textContent = 'Publishing…';
     try{
-      await HospexAuth.apiFetch('/resources', { method:'POST', body:{ name, quantity, description, category, condition, exchangeType } });
+      const image = document.getElementById('resourceImage').files[0];
+      const form = new FormData();
+      form.append('name', name); form.append('quantity', quantity); form.append('description', description);
+      form.append('category', category); form.append('condition', condition); form.append('exchangeType', exchangeType);
+      if(image) form.append('image', image);
+      await HospexAuth.apiFetch('/resources', { method:'POST', body: form });
       toast('Resource listed successfully.');
-      setTimeout(()=>location.href='index.html', 900);
+      setTimeout(()=>location.href='vendor-profile.html', 900);
     }catch(error){
       errorEl.textContent = error.message;
       errorEl.classList.add('show');

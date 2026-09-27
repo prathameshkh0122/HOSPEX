@@ -23,12 +23,20 @@ exports.create = asyncHandler(async (req, res) => {
   if (!business || business.verificationStatus !== 'verified') {
     throw httpError(403, 'Your business must be verified by admin before listing resources.');
   }
-  const { name, category, quantity, condition, exchangeType, description = '' } = req.body;
+  const { name, category, condition, exchangeType, description = '' } = req.body;
+  const quantity = Number(req.body.quantity);
   if (!name || !category || quantity === undefined || !condition || !exchangeType) throw httpError(400, 'Name, category, quantity, condition and exchange type are required.');
   if (!Number.isSafeInteger(quantity) || quantity < 1) throw httpError(400, 'Quantity must be a positive whole number.');
   const resource = await Resource.create({ name, category, quantity, condition, exchangeType, description,
+    image: req.file ? `/uploads/resources/${req.file.filename}` : '',
     owner: req.user._id, ownerName: req.user.businessName, verified: false });
   res.status(201).json({ success: true, message: 'Resource listed successfully.', data: { resource } });
+});
+
+exports.getOne = asyncHandler(async (req, res) => {
+  const resource = await Resource.findById(req.params.id).lean();
+  if (!resource) throw httpError(404, 'Resource not found.');
+  res.json({ success: true, data: { resource } });
 });
 
 exports.mine = asyncHandler(async (req, res) => {

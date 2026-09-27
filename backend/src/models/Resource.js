@@ -7,6 +7,7 @@ const resourceSchema = new mongoose.Schema({
   condition: { type: String, required: true, enum: ['new', 'good', 'used'] },
   exchangeType: { type: String, required: true, enum: ['exchange', 'sell', 'donate'] },
   description: { type: String, trim: true, maxlength: 1000, default: '' },
+  image: { type: String, default: '' },
   // ownerName is a snapshot so listings remain readable if a business is removed.
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   ownerName: { type: String, required: true, trim: true },
